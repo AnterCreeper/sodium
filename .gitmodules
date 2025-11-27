@@ -1,0 +1,3 @@
+[submodule "llvm-sodium"]
+	url = https://github.com/AnterCreeper/llvm-sodium
+	name = llvm-sodium

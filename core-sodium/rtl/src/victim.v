@@ -1,0 +1,21 @@
+module mp_victim(
+    input               sys_clk,
+    input               sys_rst,
+
+    input               mem_request,
+    input               mem_rwn,
+    output reg          mem_finish,
+
+    input [15:0]        mem_addr,
+    input reg           mem_through,    //write through for cache line flush
+    input reg[15:0]     mem_commit,     //commit data to Line Filler during writing miss
+    input reg[127:0]    mem_write_data,
+
+    output reg          mem_partial,    //read partial, if the line not all filled.
+    output reg          mem_replace,
+    output reg[4:0]     mem_replace_set,
+    output reg[6:0]     mem_replace_tag,
+    output reg[127:0]   mem_read_data
+);
+
+endmodule
