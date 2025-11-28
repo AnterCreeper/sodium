@@ -54,4 +54,27 @@ void *memset(void *str, int c, size_t n);
 void *memcpy(void *dest, const void * src, size_t n);
 void qsort(int *data, int start, int end);
 
+#define __bf_shf(x) (__builtin_ffs(x) - 1)
+
+#define XLEN 16
+#define GENMASK(h, l) (((~0U) - (1U << (l)) + 1) & (~0U >> (XLEN - 1 - (h))))
+
+#define FIELD_PREP(_mask, _val)						\
+(((typeof(_mask))(_val) << __bf_shf(_mask)) & (_mask))
+
+#define FIELD_GET(_mask, _reg)						\
+((typeof(_mask))(((_reg) & (_mask)) >> __bf_shf(_mask)))
+
+#define FIELD_MAX(_mask)						\
+((typeof(_mask))((_mask) >> __bf_shf(_mask)))
+
+#define FIELD_FIT(_mask, _val)						\
+!((((typeof(_mask))_val) << __bf_shf(_mask)) & ~(_mask))
+
+#define FIELD_MODIFY(_mask, _reg_p, _val)						\
+({										\
+    *(_reg_p) &= ~(_mask);							\
+    *(_reg_p) |= (((typeof(_mask))(_val) << __bf_shf(_mask)) & (_mask));	\
+})
+
 #endif
