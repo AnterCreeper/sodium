@@ -11,6 +11,7 @@ module system(
 );
 
 wire aux_rst;
+wire sys_init;
 
 wire 		mgmt_req;
 wire[31:0] 	mgmt_adr;
@@ -59,7 +60,6 @@ wire[6:0]   mem_replace_tag;
 wire        mie;
 wire        mie_set;
 wire        swi;
-wire        stall;
 wire[31:0]  pc_epc;
 
 wire        exi;
@@ -69,7 +69,7 @@ wire[4:0]   exi_code;
 wire        pic_mgmt_ack;
 wire        pic_mgmt_rxe;
 wire[31:0]  pic_mgmt_rxd;
-mp_irq apic(
+apic_core apic(
 	.clk(clk),
 	.rst(rst),
 
@@ -90,16 +90,16 @@ mp_irq apic(
 
 //Core
 mp_core core(
-    .sysclk (clk),
-    .ext_rst(rst),
-    .aux_rst(aux_rst),
+    .sys_clk    (clk),
+    .ext_rst    (rst),
+    .aux_rst    (aux_rst),
+    .sys_init   (sys_init),
 
     .mie        (mie),
     .exi        (exi),
     .exi_code   (exi_code),
     .swi        (swi),
     .mie_set    (mie_set),
-    .stall      (stall),
     .pc_epc     (pc_epc),
 
     .m32        (m32),
@@ -133,17 +133,18 @@ mp_core core(
     .mgmt_rxd(mgmt_rxd)
 );
 
+wire        sim_stop;
 wire        reg_mgmt_ack;
 wire        reg_mgmt_rxe;
 wire[31:0]  reg_mgmt_rxd;
-mp_reg reg_ctl(
+sysreg_core sysreg(
 	.clk(clk),
 	.rst(rst),
+	.init(sys_init),
 
     .swi(swi),
     .exi(exi),
     .perf(perf),
-    .stall(stall),
     .pc_epc(pc_epc),
     .mie_set(mie_set),
 
@@ -156,6 +157,9 @@ mp_reg reg_ctl(
     .mvec(mvec),
     .mepc(mepc),
     .mask(mask),
+`ifdef DEBUG
+    .sim_stop(sim_stop),
+`endif
 
     .mgmt_req(mgmt_req),
     .mgmt_adr(mgmt_adr),
@@ -171,7 +175,7 @@ wire        mc_mgmt_ack;
 wire        mc_mgmt_rxe;
 wire[31:0]  mc_mgmt_rxd;
 
-mp_mc mem_ctl(
+ram_core memory(
 	.clk(clk),
 	.rst(rst),
 
@@ -212,13 +216,11 @@ assign mgmt_rxd = reg_mgmt_rxd | mc_mgmt_rxd | pic_mgmt_rxd;
 //Simulator of Internal SRAM
 assign aux_rst = 0;
 
-`define DELAY 22
-
 reg[7:0] mem[65535:0];
 
 integer m,n;
 integer cnt, cnt1;
-initial cnt = `DELAY;
+initial cnt = `SIM_MEM_DELAY;
 initial cnt1 = 0;
 
 wire mem_read_request, mem_write_request;
@@ -257,21 +259,35 @@ begin
     end else
     begin
         mem_finish <= 0;
-        cnt <= `DELAY;
+        cnt <= `SIM_MEM_DELAY;
     end
 end
 
 `ifdef DEBUG
+reg sim_finish;
 integer fd, j;
 initial
 begin
+    sim_finish <= 0;
+`ifdef DEBUG_SEPERATE_DATA
+    $readmemh(`DEBUG_DATA_TXT, mem);
+`else
     for(j = 0; j < 65536; j = j + 1) mem[j] = 0;
-    fd = $fopen("test_instructions.bin","rb");
+    fd = $fopen(`DEBUG_RAMFILE, "rb");
     $fread(mem, fd);
-    //$readmemh("test_data.txt", mem);
-    //#500000;
-    //$writememh("test_data_out.txt", mem, 0, 1023);
-    //$stop;
+    $fclose(fd);
+`endif
+    #`MAX_RUN_CYCLES;
+    sim_finish <= `DEBUG_FINISH;
+end
+
+wire dump = sim_finish | sim_stop;
+always @(posedge dump)
+begin
+    fd = $fopen(`DEBUG_RESULT, "wb");
+    for(j = 0; j < 65536; j = j + 1) $fwrite(fd, mem[j]);
+    $fclose(fd);
+    $stop;
 end
 `endif
 

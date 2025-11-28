@@ -1,0 +1,10 @@
+.DS_store
+./core-sodium/rtl/hdl.var
+./core-sodium/rtl/cds.lib
+./core-sodium/rtl/ncsim.log
+./core-sodium/rtl/ncelab.log
+./core-sodium/rtl/ncvlog.log
+./core-sodium/rtl/nclaunch.key
+./core-sodium/rtl/waves.shm
+./core-sodium/rtl/INCA_libs
+./core-sodium/rtl/.*

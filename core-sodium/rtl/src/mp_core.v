@@ -33,11 +33,10 @@ end
 endmodule
 
 module mp_regfile(
-    input sysclk,
+    input sys_clk,
 
-    input[4:0] rs1,
-    input[4:0] rs2,
-
+    input[4:0]   rs1,
+    input[4:0]   rs2,
     output[15:0] rs1_data16,
     output[15:0] rs2_data16,
     output[31:0] rs1_data32,
@@ -53,7 +52,6 @@ reg[31:0] mem[15:0];
 
 wire[31:0] rs1_mem = mem[rs1[4:1]];
 wire[31:0] rs2_mem = mem[rs2[4:1]];
-
 assign rs1_data32 = rs1[4:1] == 0 ? 0 : rs1_mem;
 assign rs2_data32 = rs2[4:1] == 0 ? 0 : rs2_mem;
 assign rs1_data16 = rs1[4:0] == 0 ? 0 : (rs1[0] ? rs1_mem[31:16] : rs1_mem[15:0]);
@@ -62,7 +60,7 @@ assign rs2_data16 = rs2[4:0] == 0 ? 0 : (rs2[0] ? rs2_mem[31:16] : rs2_mem[15:0]
 wire[31:0] D;
 assign D = wb32 ? wb_rd_data32 : {wb_rd_data32[15:0], wb_rd_data32[15:0]};
 
-always @(posedge sysclk)
+always @(posedge sys_clk)
 begin
     mem[wb_rd[4:1]][15:0]  <= wb && (wb32 || !wb_rd[0]) ? D[15:0]  : mem[wb_rd[4:1]][15:0];
     mem[wb_rd[4:1]][31:16] <= wb && (wb32 ||  wb_rd[0]) ? D[31:16] : mem[wb_rd[4:1]][31:16];
@@ -70,9 +68,10 @@ end
 endmodule
 
 module mp_core(
-    input sysclk,
+    input sys_clk,
     input ext_rst,
     input aux_rst,
+    output sys_init,
 
     //Interrupt
     input           mie,
@@ -80,7 +79,6 @@ module mp_core(
     input[4:0]      exi_code,
     output          swi,
     output          mie_set,
-    output          stall,
     output[31:0]    pc_epc,
 
     //Config Register
@@ -123,9 +121,9 @@ module mp_core(
 );
 
 //Reset Module
-wire sys_init, sys_setn;
+wire sys_setn;
 mp_sync_rst rst(
-    .clk(sysclk),
+    .clk(sys_clk),
     .ext_rst(ext_rst),
     .aux_rst(aux_rst),
     .sysinit(sys_init),
@@ -144,8 +142,7 @@ wire stall_lsu; //load store unit stall
 wire stall_sru; //special register unit stall
 wire stall_wfi; //wait for interrupt stall
 wire stall_haz; //hazard stall
-
-assign stall = !icache_vld || stall_lsu || stall_sru || stall_wfi || stall_haz || sys_init;
+wire stall = !icache_vld || stall_lsu || stall_sru || stall_wfi || stall_haz || sys_init;
 
 //I cache
 wire[31:0] fetch_addr;
@@ -156,7 +153,7 @@ assign icache_ack = sys_init || !stall;
 assign icache_addr = {m32 ? 0 : fetch_addr[31:16], fetch_addr[15:2]};
 
 mp_icache   icache(
-    .sysclk     (sysclk),
+    .sys_clk    (sys_clk),
     .sys_setn   (sys_setn),
 
     .icache_ack (icache_ack),
@@ -217,7 +214,7 @@ reg [4:0] wb_rd;
 reg[31:0] wb_rd_data32;
 
 mp_regfile regfile(
-    .sysclk(sysclk),
+    .sys_clk(sys_clk),
     .rs1(rs1),
     .rs2(rs2),
     .rs1_data32(rs1_data32),
@@ -237,7 +234,7 @@ wire issue_wfi = !stall && opcode4 == `FMT_HT && func3 == `FUNC_USR && tag5 == `
 wire issue_swi = !stall && opcode4 == `FMT_HT && func3 == `FUNC_ECALL;
 wire issue_mem = !stall && opcode4 == `FMT_LS;
 wire issue_sru = !stall && opcode4 == `FMT_SR;
-wire issue_lra = !stall && opcode4 == `FMT_LRA;
+wire issue_byp = !stall && opcode4 == `FMT_LRA;
 
 assign perf[0] = !sys_init && !stall_wfi;  //Systick
 assign perf[1] = !icache_vld;              //I$ miss
@@ -290,23 +287,23 @@ begin
 end
 wire[31:0] lsu_seek = 1 << lsu_addr_in[8:4];
 
-wire       lra_zero  = func3 == `FUNC_LRA_ZERO;
-wire       lra_m32   = m32 && !lra_zero;
-wire[4:0]  lra_shift = func3 == `FUNC_LRA_ZERO ? 0  : (
+wire       byp_zero  = func3 == `FUNC_LRA_ZERO;
+wire       byp_m32   = m32 && !byp_zero;
+wire[4:0]  byp_shift = func3 == `FUNC_LRA_ZERO ? 0  : (
                        func3 == `FUNC_LRA_PC ?   1  : (
                        func3 == `FUNC_LRA_PC12 ? 13 : (
                        func3 == `FUNC_LRA_PC20 ? 21 :
                        5'bx)));
-wire[31:0] lra_data  = (lra_zero ? 0 : pc) + ({imm32[31], imm32[31:1]} << lra_shift);
+wire[31:0] byp_data  = (byp_zero ? 0 : pc) + ({imm32[31], imm32[31:1]} << byp_shift);
 
 //Writeback and Forward Regs
 wire[4:0] bru_wb_rd;
-wire bru_wb, alu_wb, lra_wb, lsu_wb, evb_wb;
-wire alu_wb32, lsu_wb32, evb_wb32, lra_wb32;
+wire bru_wb, alu_wb, byp_wb, lsu_wb, evb_wb;
+wire alu_wb32, lsu_wb32, evb_wb32, byp_wb32;
 
 wire[31:0] bru_wb_data;
 wire[31:0] alu_wb_data;
-wire[31:0] lra_wb_data;
+wire[31:0] byp_wb_data;
 wire[31:0] lsu_wb_data;
 wire[31:0] evb_wb_data;
 
@@ -319,7 +316,7 @@ reg[31:0]  mem_fwd_data1;
 
 //Execution
 mp_branch   bru(
-    .sysclk     (sysclk),
+    .sys_clk    (sys_clk),
     .sys_setn   (sys_setn),
 
     .stall      (stall),
@@ -355,8 +352,22 @@ mp_branch   bru(
     .wb_data    (bru_wb_data)
 );
 
+mp_bypass   byp(
+    .sys_clk     (sys_clk),
+    .sys_setn   (sys_setn),
+
+    .issue      (issue_byp),
+
+    .m32        (byp_m32),
+    .data       (byp_data),
+
+    .wb         (byp_wb),
+    .wb32       (byp_wb32),
+    .wb_data    (byp_wb_data)
+);
+
 mp_alu      alu(
-    .sysclk     (sysclk),
+    .sys_clk     (sys_clk),
     .sys_setn   (sys_setn),
 
     .issue      (issue_alu),
@@ -378,22 +389,8 @@ mp_alu      alu(
     .wb_data    (alu_wb_data)
 );
 
-mp_bypass   lra(
-    .sysclk     (sysclk),
-    .sys_setn   (sys_setn),
-
-    .issue      (issue_lra),
-
-    .m32        (lra_m32),
-    .data       (lra_data),
-
-    .wb         (lra_wb),
-    .wb32       (lra_wb32),
-    .wb_data    (lra_wb_data)
-);
-
 mp_dcache   lsu(
-    .sys_clk    (sysclk),
+    .sys_clk    (sys_clk),
     .sys_rst    (sys_setn),
 
     .stall      (stall_lsu),
@@ -440,8 +437,8 @@ mp_dcache   lsu(
     .mem_read_data  (mem_read_data)
 );
 
-mp_evb      evb(
-    .sysclk     (sysclk),
+mp_sysreg   evb(
+    .sys_clk     (sys_clk),
     .sys_setn   (sys_setn),
 
     .stall      (stall_sru),
@@ -475,21 +472,21 @@ mp_evb      evb(
 
 //Writeback
 reg[4:0] ex_rd;
-always @(posedge sysclk)
+always @(posedge sys_clk)
 begin
     if(!stall) ex_rd <= opcode4 == `FMT_LS || opcode4 == `FMT_SR ? rs1 : rd;
 end
 always @(*)
 begin
-    wb      <= bru_wb || alu_wb || lsu_wb || evb_wb || lra_wb;
-    wb32    <= alu_wb32 || lsu_wb32 || evb_wb32 || lra_wb32;
+    wb      <= bru_wb || alu_wb || lsu_wb || evb_wb || byp_wb;
+    wb32    <= alu_wb32 || lsu_wb32 || evb_wb32 || byp_wb32;
     wb_rd   <= bru_wb ? bru_wb_rd : ex_rd;
-    case({bru_wb, alu_wb, lsu_wb, evb_wb, lra_wb})
+    case({bru_wb, alu_wb, lsu_wb, evb_wb, byp_wb})
     5'b10000: wb_rd_data32 <= bru_wb_data;
     5'b01000: wb_rd_data32 <= alu_wb_data;
     5'b00100: wb_rd_data32 <= lsu_wb_data;
     5'b00010: wb_rd_data32 <= evb_wb_data;
-    5'b00001: wb_rd_data32 <= lra_wb_data;
+    5'b00001: wb_rd_data32 <= byp_wb_data;
     default:  wb_rd_data32 <= 32'bx;
     endcase
 end
@@ -500,7 +497,7 @@ wire pre_fwd2 = rs2[4:1] == 0 ? 1'b0 : (wb_rd[4:1] == rs2[4:1] ? wb : 0);
 
 assign stall_haz = (opcode4 == `FMT_LS || issue_jmp) && pre_fwd2 ? wb32 || (wb_rd[0] == rs2[0]) : 0;
 
-always @(posedge sysclk or posedge sys_setn)
+always @(posedge sys_clk or posedge sys_setn)
 begin
     if(sys_setn)
     begin

@@ -1,6 +1,6 @@
 `include "defines.v"
 
-module mp_mc(
+module ram_core(
 	input clk,
 	input rst,
 //HOST
@@ -51,15 +51,15 @@ wire 		ram_rwds_ddr;
 wire[1:0] 	ram_rwds_out;
 
 //Physical
-dll dll_ckout(
-	.enable(ram_cke),
-	.clkin(clk),
-	.clkout(ram_clk)
-);
 dll dll_ckin(
 	.enable(ram_rx_en),
 	.clkin(ram_rwds),
 	.clkout(ram_rx_clk)
+);
+dll dll_ckout(
+	.enable(ram_cke),
+	.clkin(clk),
+	.clkout(ram_clk)
 );
 
 assign ram_rwds 	= ram_rwds_oe ? ram_rwds_ddr : 1'bz;

@@ -4,7 +4,7 @@
 `define REPLACE_OUT     3'b010
 `define REPLACE_IN      3'b100
 
-module mp_cacheram(
+module dcache_line(
     input         CLK,
     input         CEN,
     input [4:0]   A,
@@ -29,7 +29,7 @@ begin
 end
 endmodule
 
-module mp_tagram(
+module dcache_tags(
     input        CLKA,
     input        CENA,
     input[4:0]   AA,
@@ -55,7 +55,7 @@ begin
 end
 endmodule
 
-module mp_permute(
+module dcache_permute(
     input[127:0] A,
     input[15:0]  M,
 
@@ -210,7 +210,7 @@ wire[6:0] tag;
 wire      update;
 wire[4:0] newset;
 wire[6:0] newtag;
-mp_tagram tags(
+dcache_tags tags(
     .CLKA(sys_clk),
     .CENA(!issue),
     .AA(lsu_addr_set),
@@ -274,7 +274,7 @@ reg[4:0]    line_adr;
 reg[127:0]  line_din;
 wire[127:0] line_dout;
 
-mp_cacheram cache_lines(
+dcache_line cache_lines(
     .CLK    (!sys_clk),
     .CEN    (~line_cen),
     .WEN    (~line_wen),
@@ -331,7 +331,7 @@ begin
     wb   <= stall ? 0 : (replace_fin || cache_issue) && cache_rwn;
     wb32 <= (replace_fin || cache_issue) ? cache_mode == `TAG_LSW : 0;
 end
-mp_permute permute(
+dcache_permute permute(
     .A(line_dout),
     .M(rf_mask_raw),
     .S(cache_ofs[1:0]),

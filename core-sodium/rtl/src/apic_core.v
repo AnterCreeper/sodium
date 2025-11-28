@@ -5,7 +5,7 @@
 `define WIDTHX  (2*`N+1)
 `define WIDTHY  `N
 
-module irq_sort_cas
+module sig_sort_cas
 #(
     parameter A = 0,
     parameter B = 0
@@ -64,7 +64,7 @@ end
 endgenerate
 endmodule
 
-module irq_sort(
+module sig_sort(
     input   clk,
     input   rst_n,
     //input   vld_in,
@@ -93,7 +93,7 @@ begin
     for(j = i; j >= 0; j = j - 1)
     begin
     localparam k = i*(i+1)/2+i-j;
-    irq_sort_cas #(i, j) s(
+    sig_sort_cas #(i, j) cas(
         .clk    (clk),
         .rst_n  (rst_n),
         //.vld_in (k == 0 ? vld_in : vld[k]),
@@ -108,14 +108,13 @@ end
 endgenerate
 endmodule
 
-module mp_irq(
+module apic_core(
     input            clk,
     input            rst,
 
     input[31:0]      irq,
-
     output           exi,
-    output[4:0]      exi_code,  //32 lines
+    output[4:0]      exi_code,
 
     input 			 mgmt_req,
 	input[31:0] 	 mgmt_adr,
@@ -143,22 +142,22 @@ begin
     end
 end
 
-reg         rwn;
-reg[1:0]    wen;
+reg rwn;
+reg wen;
 
-reg[15:0]   cr_cmd;
-reg[15:0]   cr_din;
-reg[31:0]   cr_dou;
+reg[31:0]   cfg_cmd;
+reg[31:0]   cfg_din;
+wire[31:0]  cfg_dout;
 
 always @(posedge clk)
 begin
     rwn     <= mgmt_rwn;
     wen     <= mgmt_wen;
-    cr_cmd  <= mgmt_adr;
-    cr_din  <= mgmt_txd;
+    cfg_cmd <= mgmt_adr;
+    cfg_din <= mgmt_txd;
 end
 
-wire valid = issue && ((cr_cmd & `MASK_IRQ) == `ADDR_IRQ);
+wire vld = issue && ((cfg_cmd & `MASK_IRQ) == `ADDR_IRQ);
 
 always @(posedge clk or posedge rst)
 begin
@@ -169,7 +168,7 @@ begin
     end else
     begin
         mgmt_fin <= issue;
-        mgmt_ack <= valid;
+        mgmt_ack <= vld;
     end
 end
 
@@ -180,32 +179,15 @@ begin
         mgmt_rxe <= 0;
     end else
     begin
-        mgmt_rxe <= valid && rwn;
-        mgmt_rxd <= valid ? cr_dou : 0;
+        mgmt_rxe <= vld && rwn;
+        mgmt_rxd <= vld ? cfg_dout : 0;
     end
 end
 
-reg[2:0] mpri[(2**`N)-1:0];
-//Read Datapath
-always @(*)
-begin
-    cr_dou <= {13'h0, mpri[cr_cmd[4:0]]};
-end
-always @(posedge clk)
-begin
-    mpri[cr_cmd[4:0]] <= valid && wen[0] ? cr_din : mpri[cr_cmd[4:0]];
-end
+reg          mvld[(2**`N)-1:0];
+reg[`N-1:0]  mcnt[(2**`N)-1:0];
+wire[`N-1:0] mpri[(2**`N)-1:0];
 
-reg      mvld[(2**`N)-1:0];
-reg[2:0] mcnt[(2**`N)-1:0];
-`ifdef DEBUG
-integer k;
-initial
-begin //for simulation only
-    for(k = 0; k < 2**`N; k = k + 1) mpri[k] <= 0;
-    for(k = 0; k < 2**`N; k = k + 1) mcnt[k] <= 0;
-end
-`endif
 genvar i;
 generate
 for(i = 0; i < 2**`N; i = i + 1)
@@ -230,7 +212,7 @@ endgenerate
 
 wire[(2**`N)*`WIDTHX-1:0] exi_prior;
 wire[(2**`N)*`WIDTHY-1:0] exi_lines;
-irq_sort sort(
+sig_sort sort(
     .clk    (clk),
     .rst_n  (!rst),
     .a      (prio),
@@ -239,8 +221,23 @@ irq_sort sort(
     .y      (exi_lines)
 );
 
+//Regmap DFF File
+wire[`N*(2**`N)-1:0] _mpri;
+`UNPK_ARRAY(`N, (2**`N), mpri, _mpri)
+dffs_single_port #(`N, `N) //(2**N)xN bits
+priority(
+    .CLK(clk),
+    .CEN(~vld),
+    .WEN(~wen),
+    .A(cfg_cmd[`N-1:0]),
+    .D(cfg_din[`N-1:0]),
+    .Q(cfg_dout[`N-1:0]),
+    .DFF(_mpri)
+);
+assign cfg_dout[31:`N] = 0;
+
 //external interrupt output
-assign exi      = exi_prior[`WIDTHX-1];
+assign exi      = !exi_prior[`WIDTHX-1];
 assign exi_code = exi_lines[`WIDTHY-1:0];
 
 endmodule

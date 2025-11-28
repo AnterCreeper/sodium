@@ -1,7 +1,7 @@
 `include "defines.v"
 
 module mp_branch(
-    input sysclk,
+    input sys_clk,
     input sys_setn,
 
     input       stall,
@@ -77,7 +77,7 @@ wire[31:0] pc_nxt       = irq ? pc_int : (issue_jmp && flag ? pc_jmp : pc_plus4)
 
 assign pc_epc = pc_plus4;
 
-always @(posedge sysclk or posedge sys_setn)
+always @(posedge sys_clk or posedge sys_setn)
 begin
     if(sys_setn)
     begin
@@ -93,7 +93,7 @@ end
 assign wb_rd = `REG_RA;
 assign fetch_addr = stall ? pc[31:0] : pc_nxt[31:0];
 
-always @(posedge sysclk or posedge sys_setn)
+always @(posedge sys_clk or posedge sys_setn)
 begin
     if(sys_setn) wb <= 0;
     else
@@ -106,7 +106,7 @@ end
 endmodule
 
 module mp_bypass(
-    input sysclk,
+    input sys_clk,
     input sys_setn,
 
     input issue,
@@ -120,13 +120,13 @@ module mp_bypass(
     output reg[31:0] wb_data
 );
 
-always @(posedge sysclk or posedge sys_setn)
+always @(posedge sys_clk or posedge sys_setn)
 begin
     wb   <= sys_setn ? 0 : issue;
     wb32 <= sys_setn ? 0 : issue && m32;
 end
 
-always @(posedge sysclk)
+always @(posedge sys_clk)
 begin
     wb_data <= data;
 end
@@ -134,7 +134,7 @@ end
 endmodule
 
 module mp_alu(
-    input sysclk,
+    input sys_clk,
     input sys_setn,
 
     input issue,
@@ -167,13 +167,13 @@ reg[3:0]    alu_cmd;
 reg[15:0]   alu_data_in1;
 reg[15:0]   alu_data_in2;
 
-always @(posedge sysclk or posedge sys_setn)
+always @(posedge sys_clk or posedge sys_setn)
 begin
     if(sys_setn) alu_issue <= 0;
     else alu_issue <= issue;
 end
 
-always @(posedge sysclk)
+always @(posedge sys_clk)
 begin
     alu_tag3     <= tag3;
     alu_func3    <= func3;
@@ -254,8 +254,8 @@ assign wb_data = result_arith | result_btman | result_logic | result_multi;
 
 endmodule
 
-module mp_evb(
-    input sysclk,
+module mp_sysreg(
+    input sys_clk,
     input sys_setn,
 
     output reg  stall,
@@ -321,7 +321,7 @@ reg[2:0]    evb_func3;
 
 wire mgmt_fin = mgmt_rwn ? mgmt_rxe : mgmt_ack;
 
-always @(posedge sysclk or posedge sys_setn)
+always @(posedge sys_clk or posedge sys_setn)
 begin
     if(sys_setn)
     begin
@@ -335,7 +335,7 @@ begin
         evb_wb <= stall ? evb_wb : issue && func3 != `FUNC_DR;
     end
 end
-always @(posedge sysclk or posedge sys_setn)
+always @(posedge sys_clk or posedge sys_setn)
 begin
     if(sys_setn)
     begin
@@ -348,7 +348,7 @@ begin
     end
 end
 
-always @(posedge sysclk)
+always @(posedge sys_clk)
 begin
     if(issue)
     begin
@@ -378,7 +378,7 @@ begin
     endcase
 end
 
-always @(posedge sysclk)
+always @(posedge sys_clk)
 begin
     case(evb_tag2)
     `TAG_W: wb_data <= mgmt_rxd;

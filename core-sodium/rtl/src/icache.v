@@ -1,6 +1,6 @@
 `include "defines.v"
 
-module code_mem(
+module icache_mem(
     input CLKA,
     input CLKB,
     input CENA,
@@ -11,26 +11,12 @@ module code_mem(
     input[31:0]  DB
 );
 
-/*
-gowin_dpram mem(
-    .clka   (CLKB),
-    .clkb   (CLKA),
-    .ena    (!CENB),
-    .wea    (!CENB),
-    .enb    (!CENA),
-    .addra  (AB),
-    .dina   (DB),
-    .addrb  (AA),
-    .doutb  (QA)
-);
-*/
-
 reg[31:0] mem[16383:0];
 `ifdef DEBUG
 integer fd;
 initial
 begin
-    fd = $fopen("test_instructions.bin","rb");
+    fd = $fopen(`DEBUG_RAMFILE, "rb");
     $fread(mem, fd);
 end
 `endif
@@ -54,7 +40,7 @@ end
 endmodule
 
 module mp_icache(
-    input        sysclk,
+    input        sys_clk,
     input        sys_setn,
 
     input        icache_ack,
@@ -74,9 +60,9 @@ icache_vld = 1;
 */
 end
 
-code_mem mem(
-    .CLKA(sysclk),
-    .CLKB(sysclk),
+icache_mem mem(
+    .CLKA(sys_clk),
+    .CLKB(sys_clk),
     .CENA(~icache_ack),
     .CENB(1'b1),
     .AA(icache_addr),

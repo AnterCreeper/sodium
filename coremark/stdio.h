@@ -35,14 +35,19 @@ static void __attribute__((always_inline)) dcache_flush(void* data) {
 
 int ee_printf(const char *fmt, ...);
 
-static void debug(int x) {
-    __asm__ volatile("wcsr\tmcr3, %0" : : "r"(x));
-}
-
 static void debug_flush() {
     #pragma clang loop unroll(disable)
     for(int i = 0; i < 512; i = i + 16) dcache_flush((void*)i);
     return;
+}
+
+static void debug_stop() {
+    int cmd = 0x1;
+    __asm__ volatile("wcsr\t0x1e, %0" : : "r"(cmd));
+}
+
+static void debug_putchar(unsigned char c) {
+    __asm__ volatile("wcsr\t0x1f, %0" : : "r"(c));
 }
 
 void *memset(void *str, int c, size_t n);

@@ -1,4 +1,4 @@
-module mp_victim(
+module slc_core(
     input               sys_clk,
     input               sys_rst,
 

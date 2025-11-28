@@ -1,13 +1,14 @@
-	.section .init,"ax",@progbits
-    .globl _start
-    .align 2
+    .section .vector,"ax",@progbits
+    .globl	_start
+    .weak	_syscall
+    .weak	_trap
+    .weak	_unimp
+    .weak	_irq
+    .align	2
+_vector_base:
+	#software interrupt
 _start:
 	b	_init
-
-    .section .vector,"ax",@progbits
-    .align 2
-_vector_base:  #soft irq
-	b	_start
 	b	_syscall
 	b	_trap
 	b	_unimp
@@ -39,7 +40,7 @@ _vector_base:  #soft irq
 	ebreak
 	ebreak
 	ebreak
-               #hard irq
+	#hardware interrupt
 	b	_irq
 	ebreak
 	ebreak
@@ -72,16 +73,16 @@ _vector_base:  #soft irq
 	ebreak
 	ebreak
 	ebreak
-_irq:
 _syscall:
 _trap:
 _unimp:
+_irq:
 1:
     b     1b
 
     .section .text.init,"ax",@progbits
-	.weak	_init
-	.align	1
+    .weak	_init
+    .align	2
 _init:
     # reset register bank
     add.i x1, zero, 0

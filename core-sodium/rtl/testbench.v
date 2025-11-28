@@ -1,9 +1,5 @@
 `include "defines.v"
 
-`define HALF_CYC 2.5
-`define QUA_CYC 1.25
-`define CYC	5
-
 module dll(
 	input enable,
 	input clkin,
@@ -11,7 +7,7 @@ module dll(
 );
 always @(*)
 begin
-#`QUA_CYC clkout <= enable ? clkin : 0;
+#`SIM_QUAT_CYC clkout <= enable ? clkin : 0;
 end
 endmodule
 
@@ -36,20 +32,18 @@ system testbench(
 	.ram_rwds(ram_rwds)
 );
 
-always #`HALF_CYC clk = !clk;
+always #`SIM_HALF_CYC clk = !clk;
 
 initial
 begin
 	clk = 0;
 	rst = 1;
 	irq = 0;
-	#250 rst = 0;
-	#`HALF_CYC;
-	#125000;
-	irq = 1;
+	#`SIM_RELEASE rst = 0;
+	#`SIM_HALF_CYC;
 end
 
-W958D8NBYA mem(
+W958D8NBYA hyperram(
 	.adq(ram_adq),
 	.clk(ram_clk),
 	.clk_n(1'b0),

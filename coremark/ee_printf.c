@@ -359,8 +359,8 @@ repeat:
   return str - buf;
 }
 
-void uart_send_char(char c) {
-  debug((unsigned)c);
+void uart_send_char(unsigned char c) {
+  debug_putchar(c);
 }
 
 int ee_printf(const char *fmt, ...)

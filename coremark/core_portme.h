@@ -20,7 +20,7 @@
 #endif
 #define TOTAL_DATA_SIZE 3*666
 
-#define ITERATIONS 4
+#define ITERATIONS 1
 #define CLOCKS_PER_SEC 200000000
 
 /************************/
