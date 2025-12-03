@@ -1,4 +1,5 @@
 .DS_store
+core-sodium/rtl/dump_data.bin
 core-sodium/rtl/hdl.var
 core-sodium/rtl/cds.lib
 core-sodium/rtl/ncsim.log

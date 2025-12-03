@@ -1,0 +1,31 @@
+`include "defines.v"
+
+module victim_core(
+    input           sys_clk,
+    input           sys_rst,
+
+    input           mem_request,
+    output          mem_finish,
+    output          mem_partial,
+    input           mem_rwn,
+    input[15:0]     mem_addr,
+    input[15:0]     mem_commit,
+    input[127:0]    mem_write_data,
+    output          mem_replace,
+    output[4:0]     mem_replace_set,
+    output[6:0]     mem_replace_tag,
+    output[127:0]   mem_replace_dat,
+
+	output 			host_req,
+	output 			host_rwn,
+	output 			host_burst,
+	output[31:0] 	host_addr,
+	input 			host_ack,
+	output[1:0] 	host_txm,
+	output[15:0] 	host_txd,
+	input 			host_txd_ack,
+	input[15:0] 	host_rxd,
+	input 			host_rxd_vld
+);
+
+endmodule

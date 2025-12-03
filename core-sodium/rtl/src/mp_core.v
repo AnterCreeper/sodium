@@ -48,23 +48,41 @@ module mp_regfile(
     input[31:0]  wb_rd_data32
 );
 
-reg[31:0] mem[15:0];
+wire[1:0]  wb_mask = wb32 ? 2'b11 : {wb_rd[0], !wb_rd[0]};
+wire[31:0] wb_data = wb32 ? wb_rd_data32 : {wb_rd_data32[15:0], wb_rd_data32[15:0]};
 
-wire[31:0] rs1_mem = mem[rs1[4:1]];
-wire[31:0] rs2_mem = mem[rs2[4:1]];
+wire[31:0] rs1_mem, rs2_mem;
+dffs_dp_async #(4, 32, 1)   //16x32 DFFs, async read
+regfile_0 (
+    .CLK(sys_clk),
+
+    .CENA(~wb),
+    .WENA(~wb_mask),
+    .AA(wb_rd[4:1]),
+    .DA(wb_data),
+
+    .AB(rs1[4:1]),
+    .QB(rs1_mem)
+);
+
+dffs_dp_async #(4, 32, 1)   //16x32 DFFs, async read
+regfile_1 (
+    .CLK(sys_clk),
+
+    .CENA(~wb),
+    .WENA(~wb_mask),
+    .AA(wb_rd[4:1]),
+    .DA(wb_data),
+
+    .AB(rs2[4:1]),
+    .QB(rs2_mem)
+);
+
 assign rs1_data32 = rs1[4:1] == 0 ? 0 : rs1_mem;
 assign rs2_data32 = rs2[4:1] == 0 ? 0 : rs2_mem;
 assign rs1_data16 = rs1[4:0] == 0 ? 0 : (rs1[0] ? rs1_mem[31:16] : rs1_mem[15:0]);
 assign rs2_data16 = rs2[4:0] == 0 ? 0 : (rs2[0] ? rs2_mem[31:16] : rs2_mem[15:0]);
 
-wire[31:0] D;
-assign D = wb32 ? wb_rd_data32 : {wb_rd_data32[15:0], wb_rd_data32[15:0]};
-
-always @(posedge sys_clk)
-begin
-    mem[wb_rd[4:1]][15:0]  <= wb && (wb32 || !wb_rd[0]) ? D[15:0]  : mem[wb_rd[4:1]][15:0];
-    mem[wb_rd[4:1]][31:16] <= wb && (wb32 ||  wb_rd[0]) ? D[31:16] : mem[wb_rd[4:1]][31:16];
-end
 endmodule
 
 module mp_core(
@@ -96,17 +114,16 @@ module mp_core(
 
     //L2 Cache
     output          mem_request,
-    output          mem_rwn,
     input           mem_finish,
     input           mem_partial,
+    output          mem_rwn,
     output[15:0]    mem_addr,
-    output          mem_through,
     output[15:0]    mem_commit,
     output[127:0]   mem_write_data,
     input           mem_replace,
     input[4:0]      mem_replace_set,
     input[6:0]      mem_replace_tag,
-    input[127:0]    mem_read_data,
+    input[127:0]    mem_replace_dat,
 
     //Management Command
     output 			mgmt_req,
@@ -315,7 +332,7 @@ reg[15:0]  alu_fwd_data2;
 reg[31:0]  mem_fwd_data1;
 
 //Execution
-mp_branch   bru(
+mp_branch   bpu(
     .sys_clk    (sys_clk),
     .sys_setn   (sys_setn),
 
@@ -352,7 +369,7 @@ mp_branch   bru(
     .wb_data    (bru_wb_data)
 );
 
-mp_bypass   byp(
+mp_bypass   bypass(
     .sys_clk     (sys_clk),
     .sys_setn   (sys_setn),
 
@@ -422,22 +439,19 @@ mp_dcache   lsu(
     .invd_adr   (invd_adr),
 
     .mem_request    (mem_request),
-    .mem_rwn        (mem_rwn),
     .mem_finish     (mem_finish),
     .mem_partial    (mem_partial),
-
+    .mem_rwn        (mem_rwn),
     .mem_addr       (mem_addr),
-    .mem_through    (mem_through),
     .mem_commit     (mem_commit),
     .mem_write_data (mem_write_data),
-
     .mem_replace    (mem_replace),
     .mem_replace_set(mem_replace_set),
     .mem_replace_tag(mem_replace_tag),
-    .mem_read_data  (mem_read_data)
+    .mem_replace_dat(mem_replace_dat)
 );
 
-mp_sysreg   evb(
+mp_sysbus   sysbus(
     .sys_clk     (sys_clk),
     .sys_setn   (sys_setn),
 

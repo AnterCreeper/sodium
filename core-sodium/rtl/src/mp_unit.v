@@ -217,7 +217,7 @@ calc_logic logic(
 );
 
 wire[31:0] result_btman;
-calc_btman btman(
+calc_bitman btman(
     .A(A),
     .B(B),
     .S(alu_flag7),
@@ -254,7 +254,7 @@ assign wb_data = result_arith | result_btman | result_logic | result_multi;
 
 endmodule
 
-module mp_sysreg(
+module mp_sysbus(
     input sys_clk,
     input sys_setn,
 

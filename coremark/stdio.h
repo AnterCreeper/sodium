@@ -77,4 +77,13 @@ void qsort(int *data, int start, int end);
     *(_reg_p) |= (((typeof(_mask))(_val) << __bf_shf(_mask)) & (_mask));	\
 })
 
+static unsigned int __bytereplica16(unsigned char c) {
+    unsigned int result;
+    __asm__ volatile("pack\t%0, %1, %1, 8" : "=r"(result) : "r"(c));
+    return result;
+}
+
+#define __bytereplica32(c)  (((unsigned long)__bytereplica16(c) << 16) | __bytereplica16(c))
+#define __aligned(p)        (((size_t)p & 0xf) == 0)
+
 #endif

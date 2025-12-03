@@ -150,17 +150,17 @@ wire[1023:0] _new_data;
 wire[1023:0] _old_data;
 `PACK_ARRAY(32, 32, _new_data, new_data)
 `UNPK_ARRAY(32, 32, old_data, _old_data)
-dffs_dual_port_mask #(5, 32, 1) //32x32 DFFs with Mask
+dffs_dp_mask #(5, 32, 1) //32x32 DFFs with mask
 sysreg_mem(
     .CLK(clk),
-    .CEN(~valid),
+    .CENA(~valid),
     .WENA(~wen),
     .AA(cfg_cmd[4:0]),
     .DA(cfg_din),
     .QA(cfg_dout),
     .WENB(~update),
-    .MASK(`REG_MASK),
     .DB(_new_data),
+    .MASK(`REG_MASK),
     .DFF(_old_data)
 );
 

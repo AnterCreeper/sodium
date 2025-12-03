@@ -126,7 +126,7 @@ assign y =  ai[3] ? (
 
 endmodule
 
-module calc_rev(
+module calc_revbit(
     input[15:0]  a,
     output[15:0] y
 );
@@ -141,7 +141,7 @@ endgenerate
 
 endmodule
 
-module calc_bfm(
+module calc_bitfield(
     input[15:0]  a,
     input[15:0]  b,
     input        c, //c ? BFX : BFI
@@ -162,7 +162,7 @@ assign y = c ? $signed(ai) >> shift : $signed(ai) << shift;
 
 endmodule
 
-module calc_cmp(
+module calc_minmax(
     input[15:0]  a,
     input[15:0]  b,
     input[1:0]   c,
@@ -181,7 +181,7 @@ end
 
 endmodule
 
-module calc_pak(
+module calc_pack(
     input[15:0]  a,
     input[15:0]  b,
     input[3:0]   c,
@@ -273,7 +273,7 @@ begin
 end
 endmodule
 
-module calc_btman(
+module calc_bitman(
     input[15:0] A,
     input[15:0] B,
 
@@ -285,7 +285,7 @@ module calc_btman(
 );
 
 wire[15:0] Y1, Y2, Y3, Y4, Y5;
-calc_rev sfu1(
+calc_revbit sfu1(
     .a(A),
     .y(Y1)
 );
@@ -293,19 +293,19 @@ calc_clz sfu2(
     .a(A),
     .y(Y2)
 );
-calc_bfm sfu3(
+calc_bitfield sfu3(
     .a(A),
     .b(B),
     .c(MODE[1]),
     .y(Y3)
 );
-calc_cmp sfu4(
+calc_minmax sfu4(
     .a(A),
     .b(B),
     .c(S[1:0]),
     .y(Y4)
 );
-calc_pak sfu5(
+calc_pack sfu5(
     .a(A),
     .b(B),
     .c(S[3:0]),

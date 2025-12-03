@@ -2,6 +2,7 @@
 
 ### Overview
 
+- Iterations:       4
 - Total ticks:      0x2d978a
 - D$ miss:          0xaab2f     (23.4%)
 - Hazard stall:     0x2f77d     ( 6.5%)
@@ -10,4 +11,5 @@
 - Branch issue:     0x424bc     ( 9.0%)
 - Others:                       ( 1.4%)
 
-- Coremark Score/MHz: iterations*mega/ticks = 1.34
+- Coremark Score/MHz: 
+                    1.34        iters*mega/ticks

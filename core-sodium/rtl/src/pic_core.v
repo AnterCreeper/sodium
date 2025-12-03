@@ -5,7 +5,7 @@
 `define WIDTHX  (2*`N+1)
 `define WIDTHY  `N
 
-module sig_sort_cas
+module pic_sort_cas
 #(
     parameter A = 0,
     parameter B = 0
@@ -64,7 +64,7 @@ end
 endgenerate
 endmodule
 
-module sig_sort(
+module pic_sort(
     input   clk,
     input   rst_n,
     //input   vld_in,
@@ -93,7 +93,7 @@ begin
     for(j = i; j >= 0; j = j - 1)
     begin
     localparam k = i*(i+1)/2+i-j;
-    sig_sort_cas #(i, j) cas(
+    pic_sort_cas #(i, j) cas(
         .clk    (clk),
         .rst_n  (rst_n),
         //.vld_in (k == 0 ? vld_in : vld[k]),
@@ -108,7 +108,7 @@ end
 endgenerate
 endmodule
 
-module apic_core(
+module pic_core(
     input            clk,
     input            rst,
 
@@ -212,7 +212,7 @@ endgenerate
 
 wire[(2**`N)*`WIDTHX-1:0] exi_prior;
 wire[(2**`N)*`WIDTHY-1:0] exi_lines;
-sig_sort sort(
+pic_sort sort(
     .clk    (clk),
     .rst_n  (!rst),
     .a      (prio),
@@ -224,7 +224,7 @@ sig_sort sort(
 //Regmap DFF File
 wire[`N*(2**`N)-1:0] _mpri;
 `UNPK_ARRAY(`N, (2**`N), mpri, _mpri)
-dffs_single_port #(`N, `N) //(2**N)xN bits
+dffs_sp #(`N, `N) //(2**N)xN DFFs with mask
 priority(
     .CLK(clk),
     .CEN(~vld),
