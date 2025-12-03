@@ -1,5 +1,7 @@
 `include "defines.v"
 
+`define SIM_MEM_DELAY   23
+
 module sim_memory_generic(
     input           sys_clk,
     input           mem_dump,
@@ -42,7 +44,7 @@ begin
 end
 
 integer cnt;
-initial cnt = `SIM_MEM_DELAY+8;
+initial cnt = `SIM_MEM_DELAY;
 
 wire mem_read_request, mem_write_request;
 assign mem_read_request  = mem_request &&  mem_rwn;
@@ -65,7 +67,7 @@ begin
     if(mem_finish)
     begin
         mem_finish <= 0;
-        cnt <= `SIM_MEM_DELAY+8;
+        cnt <= `SIM_MEM_DELAY;
     end else
     if(mem_request)
     begin

@@ -38,7 +38,7 @@ module sysreg_core(
 	input[1:0]     	 mgmt_wen,
 	input[31:0] 	 mgmt_txd,
 	output reg		 mgmt_rxe,
-	output reg[31:0] mgmt_rxd
+	output[31:0]     mgmt_rxd
 );
 
 reg mgmt_fin;
@@ -89,15 +89,11 @@ end
 
 always @(posedge clk or posedge rst)
 begin
-    if(rst)
-    begin
-        mgmt_rxe <= 0;
-    end else
-    begin
-        mgmt_rxe <= valid && rwn;
-        mgmt_rxd <= valid ? cfg_dout : 0;
-    end
+    if(rst) mgmt_rxe <= 0;
+    else    mgmt_rxe <= valid && rwn;
 end
+
+assign mgmt_rxd = mgmt_rxe ? cfg_dout : 0;
 
 wire[31:0] update;
 wire[31:0] old_data[31:0];
@@ -113,14 +109,14 @@ assign update[`ADDR_MALU] = 1;
 assign update[`ADDR_MLSU] = 1;
 assign update[`ADDR_MSRU] = 1;
 
-assign new_data[`ADDR_MSTK] = init ? 0 : old_data[`ADDR_MSTK] + perf[0];
-assign new_data[`ADDR_MICM] = init ? 0 : old_data[`ADDR_MICM] + perf[1];
-assign new_data[`ADDR_MDCM] = init ? 0 : old_data[`ADDR_MDCM] + perf[2];
-assign new_data[`ADDR_MCPS] = init ? 0 : old_data[`ADDR_MCPS] + perf[3];
-assign new_data[`ADDR_MBRU] = init ? 0 : old_data[`ADDR_MBRU] + perf[4];
-assign new_data[`ADDR_MALU] = init ? 0 : old_data[`ADDR_MALU] + perf[5];
-assign new_data[`ADDR_MLSU] = init ? 0 : old_data[`ADDR_MLSU] + perf[6];
-assign new_data[`ADDR_MSRU] = init ? 0 : old_data[`ADDR_MSRU] + perf[7];
+assign new_data[`ADDR_MSTK] = init ? 0 : old_data[`ADDR_MSTK] + perf[0]; //Systick
+assign new_data[`ADDR_MICM] = init ? 0 : old_data[`ADDR_MICM] + perf[1]; //I$ miss
+assign new_data[`ADDR_MDCM] = init ? 0 : old_data[`ADDR_MDCM] + perf[2]; //D$ miss
+assign new_data[`ADDR_MCPS] = init ? 0 : old_data[`ADDR_MCPS] + perf[3]; //IPC stall
+assign new_data[`ADDR_MBRU] = init ? 0 : old_data[`ADDR_MBRU] + perf[4]; //Branch issue
+assign new_data[`ADDR_MALU] = init ? 0 : old_data[`ADDR_MALU] + perf[5]; //ALU issue
+assign new_data[`ADDR_MLSU] = init ? 0 : old_data[`ADDR_MLSU] + perf[6]; //Mem issue
+assign new_data[`ADDR_MSRU] = init ? 0 : old_data[`ADDR_MSRU] + perf[7]; //SysReg issue
 
 assign update[`ADDR_MVEC] = 0;
 assign update[`ADDR_MASK] = 0;
@@ -185,8 +181,8 @@ wire[31:0] tick_systick = old_data[`ADDR_MSTK];
 wire[31:0] tick_istall  = old_data[`ADDR_MICM];
 wire[31:0] tick_dstall  = old_data[`ADDR_MDCM];
 wire[31:0] tick_hazard  = old_data[`ADDR_MCPS];
-wire[31:0] tick_alu     = old_data[`ADDR_MALU];
-wire[31:0] tick_lsu     = old_data[`ADDR_MLSU];
+wire[31:0] tick_calc    = old_data[`ADDR_MALU];
+wire[31:0] tick_ldst    = old_data[`ADDR_MLSU];
 wire[31:0] tick_branch  = old_data[`ADDR_MBRU];
 wire[31:0] tick_sysreg  = old_data[`ADDR_MSRU];
 

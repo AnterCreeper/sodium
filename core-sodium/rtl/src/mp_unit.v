@@ -2,7 +2,7 @@
 
 module mp_branch(
     input sys_clk,
-    input sys_setn,
+    input sys_rst,
 
     input       stall,
     output reg  stall_wfi,
@@ -77,9 +77,9 @@ wire[31:0] pc_nxt       = irq ? pc_int : (issue_jmp && flag ? pc_jmp : pc_plus4)
 
 assign pc_epc = pc_plus4;
 
-always @(posedge sys_clk or posedge sys_setn)
+always @(posedge sys_clk or posedge sys_rst)
 begin
-    if(sys_setn)
+    if(sys_rst)
     begin
         pc <= 0;
         stall_wfi <= 0;
@@ -93,9 +93,9 @@ end
 assign wb_rd = `REG_RA;
 assign fetch_addr = stall ? pc[31:0] : pc_nxt[31:0];
 
-always @(posedge sys_clk or posedge sys_setn)
+always @(posedge sys_clk or posedge sys_rst)
 begin
-    if(sys_setn) wb <= 0;
+    if(sys_rst) wb <= 0;
     else
     if(!stall)
     begin
@@ -107,7 +107,7 @@ endmodule
 
 module mp_bypass(
     input sys_clk,
-    input sys_setn,
+    input sys_rst,
 
     input issue,
 
@@ -120,10 +120,10 @@ module mp_bypass(
     output reg[31:0] wb_data
 );
 
-always @(posedge sys_clk or posedge sys_setn)
+always @(posedge sys_clk or posedge sys_rst)
 begin
-    wb   <= sys_setn ? 0 : issue;
-    wb32 <= sys_setn ? 0 : issue && m32;
+    wb   <= sys_rst ? 0 : issue;
+    wb32 <= sys_rst ? 0 : issue && m32;
 end
 
 always @(posedge sys_clk)
@@ -135,7 +135,7 @@ endmodule
 
 module mp_alu(
     input sys_clk,
-    input sys_setn,
+    input sys_rst,
 
     input issue,
 
@@ -167,9 +167,9 @@ reg[3:0]    alu_cmd;
 reg[15:0]   alu_data_in1;
 reg[15:0]   alu_data_in2;
 
-always @(posedge sys_clk or posedge sys_setn)
+always @(posedge sys_clk or posedge sys_rst)
 begin
-    if(sys_setn) alu_issue <= 0;
+    if(sys_rst) alu_issue <= 0;
     else alu_issue <= issue;
 end
 
@@ -256,7 +256,7 @@ endmodule
 
 module mp_sysbus(
     input sys_clk,
-    input sys_setn,
+    input sys_rst,
 
     output reg  stall,
     input       issue,
@@ -321,9 +321,9 @@ reg[2:0]    evb_func3;
 
 wire mgmt_fin = mgmt_rwn ? mgmt_rxe : mgmt_ack;
 
-always @(posedge sys_clk or posedge sys_setn)
+always @(posedge sys_clk or posedge sys_rst)
 begin
-    if(sys_setn)
+    if(sys_rst)
     begin
         stall  <= 0;
         evb_en <= 0;
@@ -335,9 +335,9 @@ begin
         evb_wb <= stall ? evb_wb : issue && func3 != `FUNC_DR;
     end
 end
-always @(posedge sys_clk or posedge sys_setn)
+always @(posedge sys_clk or posedge sys_rst)
 begin
-    if(sys_setn)
+    if(sys_rst)
     begin
         evb_req <= 0;
         evb_fin <= 0;

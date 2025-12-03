@@ -2,14 +2,14 @@
 
 ### Overview
 
-- Iterations:       4
-- Total ticks:      0x2d978a
-- D$ miss:          0xaab2f     (23.4%)
-- Hazard stall:     0x2f77d     ( 6.5%)
-- ALU issue:        0x11c916    (39.0%)
-- LSU issue:        0x8d2e9     (19.4%)
-- Branch issue:     0x424bc     ( 9.0%)
-- Others:                       ( 1.4%)
+- Iterations:       1
+- Total ticks:      0x9e1e5
+- D$ miss:          0x12757     (11.7%)
+- Hazard stall:     0xbddb      ( 7.5%)
+- ALU issue:        0x471ad     (45.0%)
+- LSU issue:        0x234de     (22.3%)
+- Branch issue:     0x10900     (10.5%)
+- Others:                       ( 3.0%)
 
 - Coremark Score/MHz: 
-                    1.34        iters*mega/ticks
+                    1.54        iters*mega/ticks

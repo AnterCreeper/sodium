@@ -1,11 +1,11 @@
 `include "defines.v"
 
 module mp_sync_rst(
-    input clk,
-    input ext_rst, //async reset
-    input aux_rst, //sync reset
-    output reg sysinit,
-    output reg syssetn
+    input       clk,
+    input       ext_rst, //async reset
+    input       aux_rst, //sync reset
+    output reg  sysinit,
+    output reg  sys_rst
 );
 
 reg sync_rst;
@@ -19,13 +19,13 @@ end
 always @(negedge clk or posedge ext_rst)
 begin
     if(ext_rst)
-        syssetn <= 1'b1;
+        sys_rst <= 1'b1;
     else
-        syssetn <= sync_rst;
+        sys_rst <= sync_rst;
 end
-always @(posedge clk or posedge syssetn)
+always @(posedge clk or posedge sys_rst)
 begin
-    if(syssetn)
+    if(sys_rst)
         sysinit <= 1;
     else
         sysinit <= 0;
@@ -86,10 +86,11 @@ assign rs2_data16 = rs2[4:0] == 0 ? 0 : (rs2[0] ? rs2_mem[31:16] : rs2_mem[15:0]
 endmodule
 
 module mp_core(
-    input sys_clk,
-    input ext_rst,
-    input aux_rst,
-    output sys_init,
+    //Clock and Reset
+    input           sys_clk,
+    input           ext_rst,
+    input           aux_rst,
+    output          sys_init,
 
     //Interrupt
     input           mie,
@@ -138,13 +139,13 @@ module mp_core(
 );
 
 //Reset Module
-wire sys_setn;
-mp_sync_rst rst(
-    .clk(sys_clk),
-    .ext_rst(ext_rst),
-    .aux_rst(aux_rst),
-    .sysinit(sys_init),
-    .syssetn(sys_setn)
+wire sys_rst;
+mp_sync_rst reset(
+    .clk    (sys_clk),
+    .ext_rst(ext_rst),  //external async reset in
+    .aux_rst(aux_rst),  //auxiliary sync reset in
+    .sys_rst(sys_rst),  //async reset out
+    .sysinit(sys_init)  //sync reset out
 );
 
 //Sys Regs
@@ -152,28 +153,28 @@ wire[31:0] instru;
 wire[31:0] pc;
 
 wire icache_vld;
-wire icache_ack;
+wire icache_req;
 
 //Sys Statue
 wire stall_lsu; //load store unit stall
-wire stall_sru; //special register unit stall
+wire stall_sys; //special register unit stall
 wire stall_wfi; //wait for interrupt stall
 wire stall_haz; //hazard stall
-wire stall = !icache_vld || stall_lsu || stall_sru || stall_wfi || stall_haz || sys_init;
+wire stall = !icache_vld || stall_lsu || stall_sys || stall_wfi || stall_haz || sys_init;
 
 //I cache
 wire[31:0] fetch_addr;
 wire[29:0] icache_addr;
 wire[31:0] icache_data;
 
-assign icache_ack = sys_init || !stall;
+assign icache_req = sys_init || !stall;
 assign icache_addr = {m32 ? 0 : fetch_addr[31:16], fetch_addr[15:2]};
 
 mp_icache   icache(
     .sys_clk    (sys_clk),
-    .sys_setn   (sys_setn),
+    .sys_rst    (sys_rst),
 
-    .icache_ack (icache_ack),
+    .icache_req (icache_req),
     .icache_addr(icache_addr),
     .icache_vld (icache_vld),
     .icache_data(icache_data)
@@ -231,16 +232,16 @@ reg [4:0] wb_rd;
 reg[31:0] wb_rd_data32;
 
 mp_regfile regfile(
-    .sys_clk(sys_clk),
-    .rs1(rs1),
-    .rs2(rs2),
-    .rs1_data32(rs1_data32),
-    .rs2_data32(rs2_data32),
-    .rs1_data16(rs1_data16),
-    .rs2_data16(rs2_data16),
-    .wb     (wb),
-    .wb32   (wb32),
-    .wb_rd  (wb_rd),
+    .sys_clk    (sys_clk),
+    .rs1        (rs1),
+    .rs2        (rs2),
+    .rs1_data32 (rs1_data32),
+    .rs2_data32 (rs2_data32),
+    .rs1_data16 (rs1_data16),
+    .rs2_data16 (rs2_data16),
+    .wb         (wb),
+    .wb32       (wb32),
+    .wb_rd      (wb_rd),
     .wb_rd_data32(wb_rd_data32)
 );
 
@@ -250,17 +251,17 @@ wire issue_alu = !stall && (opcode4 == `FMT_I || opcode4 == `FMT_R);
 wire issue_wfi = !stall && opcode4 == `FMT_HT && func3 == `FUNC_USR && tag5 == `TAG_WFI;
 wire issue_swi = !stall && opcode4 == `FMT_HT && func3 == `FUNC_ECALL;
 wire issue_mem = !stall && opcode4 == `FMT_LS;
-wire issue_sru = !stall && opcode4 == `FMT_SR;
+wire issue_sys = !stall && opcode4 == `FMT_SR;
 wire issue_byp = !stall && opcode4 == `FMT_LRA;
 
 assign perf[0] = !sys_init && !stall_wfi;  //Systick
 assign perf[1] = !icache_vld;              //I$ miss
 assign perf[2] = stall_lsu;                //D$ miss
-assign perf[3] = stall_haz || stall_sru;   //IPC stall
+assign perf[3] = stall_haz || stall_sys;   //IPC stall
 assign perf[4] = issue_jmp && !stall;      //Branch issue
 assign perf[5] = issue_alu && !stall;      //ALU issue
 assign perf[6] = issue_mem && !stall;      //Mem issue
-assign perf[7] = issue_sru && !stall;      //SysReg issue
+assign perf[7] = issue_sys && !stall;      //SysReg issue
 
 assign swi     = issue_swi;
 assign mie_set = issue_wfi || (issue_jmp && d && func3 == `FUNC_MRET);
@@ -332,9 +333,9 @@ reg[15:0]  alu_fwd_data2;
 reg[31:0]  mem_fwd_data1;
 
 //Execution
-mp_branch   bpu(
+mp_branch   branch(
     .sys_clk    (sys_clk),
-    .sys_setn   (sys_setn),
+    .sys_rst    (sys_rst),
 
     .stall      (stall),
     .stall_wfi  (stall_wfi),
@@ -370,8 +371,8 @@ mp_branch   bpu(
 );
 
 mp_bypass   bypass(
-    .sys_clk     (sys_clk),
-    .sys_setn   (sys_setn),
+    .sys_clk    (sys_clk),
+    .sys_rst    (sys_rst),
 
     .issue      (issue_byp),
 
@@ -383,9 +384,9 @@ mp_bypass   bypass(
     .wb_data    (byp_wb_data)
 );
 
-mp_alu      alu(
-    .sys_clk     (sys_clk),
-    .sys_setn   (sys_setn),
+mp_alu      arith(
+    .sys_clk    (sys_clk),
+    .sys_rst    (sys_rst),
 
     .issue      (issue_alu),
     .func3      (func3),
@@ -406,9 +407,9 @@ mp_alu      alu(
     .wb_data    (alu_wb_data)
 );
 
-mp_dcache   lsu(
+mp_dcache   dcache(
     .sys_clk    (sys_clk),
-    .sys_rst    (sys_setn),
+    .sys_rst    (sys_rst),
 
     .stall      (stall_lsu),
     .issue      (issue_mem),
@@ -452,11 +453,11 @@ mp_dcache   lsu(
 );
 
 mp_sysbus   sysbus(
-    .sys_clk     (sys_clk),
-    .sys_setn   (sys_setn),
+    .sys_clk    (sys_clk),
+    .sys_rst    (sys_rst),
 
-    .stall      (stall_sru),
-    .issue      (issue_sru),
+    .stall      (stall_sys),
+    .issue      (issue_sys),
 
     .sel        (rs1[0]),
     .tag2       (tag2),
@@ -511,9 +512,9 @@ wire pre_fwd2 = rs2[4:1] == 0 ? 1'b0 : (wb_rd[4:1] == rs2[4:1] ? wb : 0);
 
 assign stall_haz = (opcode4 == `FMT_LS || issue_jmp) && pre_fwd2 ? wb32 || (wb_rd[0] == rs2[0]) : 0;
 
-always @(posedge sys_clk or posedge sys_setn)
+always @(posedge sys_clk or posedge sys_rst)
 begin
-    if(sys_setn)
+    if(sys_rst)
     begin
         alu_fwd_en1 <= 0;
         alu_fwd_en2 <= 0;

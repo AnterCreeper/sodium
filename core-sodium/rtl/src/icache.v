@@ -1,17 +1,13 @@
 `include "defines.v"
 
 module icache_mem(
-    input CLKA,
-    input CLKB,
-    input CENA,
-    input CENB,
-    input[29:0]  AA,
-    output[31:0] QA,
-    input[29:0]  AB,
-    input[31:0]  DB
+    input           CLK,
+    input           CEN,
+    input[29:0]     A,
+    output[31:0]    Q
 );
 
-reg[31:0] mem[16383:0];
+reg[31:0]  mem[16383:0];
 `ifdef DEBUG
 integer fd;
 initial
@@ -21,54 +17,38 @@ begin
 end
 `endif
 
-reg[13:0] adr;
-initial adr = 0;
-
-wire[31:0] QA_BE;
-assign QA_BE = mem[adr];
-assign QA = {QA_BE[7:0], QA_BE[15:8], QA_BE[23:16], QA_BE[31:24]};
-
-always @(posedge CLKA)
+reg[13:0]  addr;
+always @(posedge CLK)
 begin
-    if(!CENA) adr <= AA;
+    if(!CEN) addr <= A;
 end
-always @(posedge CLKB)
-begin
-    if(!CENB) mem[AB] <= DB;
-end
+
+wire[31:0] data = mem[addr];
+assign Q = {data[7:0], data[15:8], data[23:16], data[31:24]};
 
 endmodule
 
 module mp_icache(
     input        sys_clk,
-    input        sys_setn,
+    input        sys_rst,
 
-    input        icache_ack,
+    input        icache_req,
     input[29:0]  icache_addr,
     output reg   icache_vld,
     output[31:0] icache_data
 );
 
-initial begin
-icache_vld = 1;
-/*
-#250;
-#2.5;
-#1000 icache_vld = 0;
-#150;
-#1000 icache_vld = 1;
-*/
+always @(posedge sys_clk or posedge sys_rst)
+begin
+    if(sys_rst) icache_vld <= 0;
+    else        icache_vld <= icache_vld || icache_req;
 end
 
 icache_mem mem(
-    .CLKA(sys_clk),
-    .CLKB(sys_clk),
-    .CENA(~icache_ack),
-    .CENB(1'b1),
-    .AA(icache_addr),
-    .QA(icache_data),
-    .AB(30'b0),
-    .DB(32'b0)
+    .CLK    (sys_clk),
+    .CEN    (~icache_req),
+    .A      (icache_addr),
+    .Q      (icache_data)
 );
 
 endmodule
