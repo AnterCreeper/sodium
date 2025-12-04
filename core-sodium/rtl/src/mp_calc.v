@@ -219,9 +219,9 @@ always @(*)
 begin
     case(MODE[2:1])
     `TAG_SLL: Ai <= A << Si;
-    `TAG_ROL: Ai <= {A, A} >> (16 - Si);
     `TAG_SRL: Ai <= A >> Si;
     `TAG_SRA: Ai <= $signed($signed(A) >>> Si);
+    `TAG_SRR: Ai <= {A, A} >> Si;
     default:  Ai <= A;
     endcase
 end

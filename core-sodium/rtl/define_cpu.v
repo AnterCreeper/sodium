@@ -50,7 +50,7 @@
 `define TAG_SLL     2'b00  //I
 `define TAG_SRL     2'b01  //I
 `define TAG_SRA     2'b10  //I
-`define TAG_ROL     2'b11  //I
+`define TAG_SRR     2'b11  //I
 
 `define TAG_CMP     3'b011
 `define TAG_BFI     3'b000 //I only
