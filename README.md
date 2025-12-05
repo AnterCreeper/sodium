@@ -20,3 +20,4 @@ This project is licensed under the LGPL-2.1-or-later license. **DO NOT** downloa
 1. Sodium Core RTL Source Code
 2. LLVM Toolchain for Sodium
 3. Coremark Testbench for Sodium
+4. Compiler Explorer for LLVM Sodium Target: [https://compiler.aceps.top/](https://compiler.aceps.top/)
