@@ -69,10 +69,10 @@
 `define FUNC_LR     3'b011
 `define FUNC_S      3'b000
 `define FUNC_SC     3'b010
+`define FUNC_ZERO   3'b100
 `define FUNC_FLUSH  3'b101
-`define FUNC_ZERO   3'b110
+`define FUNC_INVD   3'b110
 `define FUNC_CLEAN  3'b111
-`define FUNC_INVD   3'b100
 
 `define TAG_LSW     2'b01
 `define TAG_LSH     2'b00
