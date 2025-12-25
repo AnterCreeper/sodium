@@ -19,20 +19,22 @@ A compiled linux-amd64 version(coremark.exe) is included for debug and validate 
 ### Perf Counter
 without -sodium-pair-spillrestore:
 | Perf Counter | Ofast | O2 | Os |
-|:============:|======:|===:|===:|
-| Branch |   0x11e35 | 0x1214a | 0x139c5 |
-| ALU |      0x4d094 | 0x4d678 | 0x51853 |
-| Memory   | 0x23966 | 0x2417f | 0x24362 |
-| Hazard   |  0xda22 |  0xdb70 |  0xd8ed |
-| D$ stall | 0x14c94 | 0x1526a | 0x12926 |
-| Total    | 0xaa6ae | 0xabfc0 | 0xaf2db |
+|:------------:|------:|---:|---:|
+| Branch |   10.5% | 10.5% | 11.2% |
+| ALU |      45.2% | 45.0% | 46.5% |
+| Memory   | 20.9% | 21.0% | 20.7% |
+| Hazard   |  8.0% |  8.0% |  7.7% |
+| D$ stall | 12.2% | 12.3% | 10.6% |
+| Others   |  3.2% |  3.2% |  3.3% |
+| Tick     | 0xaa6ae | 0xabfc0 | 0xaf2db |
 
 with -sodium-pair-spillrestore:
 | Perf Counter | Ofast | O2 | Os |
-|:============:|======:|===:|===:|
-| Branch |   0x11e35 | 0x1214c | 0x139c3 |
-| ALU |      0x4d094 | 0x4d6a1 | 0x5182a |
-| Memory   | 0x20758 | 0x20c01 | 0x20bca |
-| Hazard   |  0xda22 |  0xdb71 |  0xd8ec |
-| D$ stall | 0x155d9 | 0x1f5eb | 0x11d62 |
-| Total    | 0xa7de5 | 0xb2def | 0xaaf53 |
+|:------------:|------:|---:|---:|
+| Branch |   10.7% | 10.1% | 11.5% |
+| ALU |      45.9% | 43.3% | 47.7% |
+| Memory   | 19.3% | 18.3% | 19.1% |
+| Hazard   |  8.1% |  7.7% |  7.9% |
+| D$ stall | 12.7% | 17.5% | 10.4% |
+| Others   |  3.3% |  3.1% |  3.3% |
+| Tick     | 0xa7de5 | 0xb2def | 0xaaf53 |
