@@ -1,46 +1,46 @@
 `include "defines.v"
 
 module ram_hub(
-	input clk,
-	input rst,
+	input 		 clk,
+	input 		 rst,
+	input 		 hub_disable,
+
 //TO PHY
-	input phy_fin,
-	output reg phy_req,
-	output phy_cfg,
-	output phy_rwn,
+	input 		 phy_fin,
+	output reg 	 phy_req,
+	output 		 phy_cfg,
+	output 		 phy_rwn,
 	//data path
 	output[15:0] phy_txc,
-	input phy_txc_ack,
-	output[1:0] phy_txm,
+	input 		 phy_txc_ack,
+	output[1:0]  phy_txm,
 	output[15:0] phy_txd,
-	input phy_txd_ack,
-	input[15:0] phy_rxd,
-	input phy_rxd_vld,
+	input 		 phy_txd_ack,
+	input[15:0]  phy_rxd,
+	input		 phy_rxd_vld,
 
 //FROM Host(Memory RS)
-	input host_req,
-	input host_rwn,
-	input host_burst,
-	input[31:0] host_addr,
-	output reg host_ack,
+	input 		 host_req,
+	input 		 host_rwn,
+	input 		 host_burst,
+	input[31:0]  host_addr,
+	output reg 	 host_ack,
 	//bypass
-	input[1:0] host_txm,
-	input[15:0] host_txd,
-	output host_txd_ack,
+	input[1:0] 	 host_txm,
+	input[15:0]  host_txd,
+	output 		 host_txd_ack,
 	//bypass
 	output reg[15:0] host_rxd,
-	output reg host_rxd_vld,
+	output reg 	 host_rxd_vld,
 
 //FROM Mgmt(Config RS)
-	input mgmt_req,
-	input mgmt_rwn,
-	input[31:0] mgmt_adr,
-	input[15:0] mgmt_txd,
-	output reg mgmt_ack,
+	input 		 mgmt_req,
+	input 		 mgmt_rwn,
+	input[31:0]  mgmt_adr,
+	input[15:0]  mgmt_txd,
+	output reg 	 mgmt_ack,
 	output reg[15:0] mgmt_rxd,
-	output reg mgmt_rxe,
-
-	input hub_disable
+	output reg 	 mgmt_rxe
 );
 
 reg bus_arb; //1 for mgmt; 0 for host;

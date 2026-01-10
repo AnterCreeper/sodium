@@ -90,30 +90,30 @@ module mp_core(
     output          sys_init,
 
     //Interrupt
-    input           mie,
-    input           exi,
+    input           mie,        //IE
+    input           exi,        //extern interrupt
     input[4:0]      exi_code,
-    output          swi,
-    output          mie_set,
-    output[31:0]    pc_epc,
+    output          swi,        //syscall interrupt
+    output          mie_set,    //IE set
+    output[31:0]    pc_epc,     //exception pc
 
     //Config Register
-    input           m32,
-    input[31:0]     mvec, //interrupt vector
-    input[31:0]     mepc, //exception pc
+    input           m32,        //32-bit mode
+    input[31:0]     mvec,       //interrupt vector
+    input[31:0]     mepc,       //exception pc
 
-    //Performace Line
+    //Perf Cnt
     output[7:0]     perf,
 
     //Debug Trace
     output[7:0]     trace,
 
-    //Invalid Path
+    //D$ Invd Path
     input           invd_req,
     output          invd_ack,
     input[15:0]     invd_adr,
 
-    //L2 Cache
+    //D$ Data Path
     output          mem_request,
     input           mem_finish,
     input           mem_partial,
@@ -126,18 +126,18 @@ module mp_core(
     input[6:0]      mem_replace_tag,
     input[127:0]    mem_replace_dat,
 
+    //I$ Data Path
     output          insn_reset,
     output          insn_request,
     output[15:0]    insn_addr,
     input           insn_valid,
     input[31:0]     insn_data,
 
-    //Management Command
+    //Management
     output 			mgmt_req,
 	input 			mgmt_ack,
 	output          mgmt_rwn,
 	output[31:0] 	mgmt_adr,
-    //Management Data
 	output[1:0]     mgmt_wen,
 	output[31:0] 	mgmt_txd,
 	input 			mgmt_rxe,

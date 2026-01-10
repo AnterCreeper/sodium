@@ -4,6 +4,7 @@
 `define REPLACE_OUT     3'b010
 `define REPLACE_IN      3'b100
 
+/*
 module lsu_permute(
     input[127:0] A,
     input[15:0]  M,
@@ -16,7 +17,7 @@ module lsu_permute(
 wire[127:0] B;
 genvar i;
 generate
-for(i = 0; i < 16; i = i + 1) assign B[i*8+:8] = M[i] ? 8'hff : 8'h0;
+for(i = 0; i < 16; i = i + 1) assign B[i*8+:8] = {8{M[i]}};
 endgenerate
 
 wire[127:0] D  = A & B;
@@ -41,6 +42,36 @@ begin
     2'b10:      Y <= {24'b0, Di[23:16]};
     2'b11:      Y <= {24'b0, Di[31:24]};
     endcase
+    endcase
+end
+endmodule
+*/
+
+module lsu_permute(
+    input[127:0] A,
+    input[15:0]  M,
+
+    input[1:0]   S,
+    input[1:0]   T,
+    output reg[31:0] Y
+);
+
+wire[127:0] B;
+genvar i;
+generate
+for(i = 0; i < 16; i = i + 1) assign B[i*8+:8] = {8{M[i]}};
+endgenerate
+
+wire[127:0] D  = A & B;
+wire[31:0]  Di = (D[127:96] | D[95:64] | D[63:32] | D[31:0]) >> (8*S);
+
+always @(*)
+begin
+    case(T)
+    `TAG_LSW:   Y <=  Di;
+    `TAG_LSH:   Y <= {16'hx,  Di};
+    `TAG_LSB:   Y <= {16'hx, {8{Di[7]}}, Di[7:0]};
+    `TAG_LBU:   Y <= {16'hx,  8'b0,      Di[7:0]};
     endcase
 end
 endmodule

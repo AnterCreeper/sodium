@@ -1,7 +1,7 @@
 `timescale 1ns/1ps
 
 // HAL
-`include "hal/define_xlnx.v"
+`include "hal/define_hal.v"
 
 // Core
 `include "define_cpu.v"

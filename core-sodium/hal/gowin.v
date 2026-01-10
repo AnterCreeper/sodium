@@ -15,22 +15,6 @@ module sys_sram(
     output[127:0]   QB
 );
 
-//Dual Port SRAM, 512x128b = 8KBytes
-bram_dp_512x128 xlnx_blk_mem(
-    .addra(AA),
-    .clka(CLK),
-    .dina(DA),
-    .douta(QA),
-    .ena(!CENA),
-    .wea(!WENA),
-    .addrb(AB),
-    .clkb(CLK),
-    .dinb(DB),
-    .doutb(QB),
-    .enb(!CENB),
-    .web(!WENB)
-);
-
 endmodule
 
 //Delay Lock Looped and Clock Gating
@@ -53,12 +37,6 @@ module sys_clkgen(
 );
 
 wire locked;
-clkgen xlnx_pll(
-    .clk_in1(ref_clk),  //100 MHz
-    .reset(ext_rst),
-    .clk_out1(sys_clk), // 50 MHz
-    .locked(locked)
-);
 assign sys_rst = !locked;
 
 endmodule
@@ -74,17 +52,6 @@ module dcache_tag(
     input[6:0]    DB
 );
 
-sram_sdp #(5, 7)    //32x7 SRAM, simple dual port
-xlnx_blk_mem (
-    .CLK    (CLK),
-    .CENA   (CENA),
-    .AA     (AA),
-    .QA     (QA),
-    .CENB   (CENB),
-    .AB     (AB),
-    .DB     (DB)
-);
-
 endmodule
 
 //Data Cache Data RAM
@@ -95,16 +62,6 @@ module dcache_mem(
     input[4:0]    A,
     input[127:0]  D,
     output[127:0] Q
-);
-
-sram_sp_mask #(5, 128, 4) //32x128 SRAM, with byte mask
-xlnx_blk_mem(
-    .CLK    (CLK),
-    .CEN    (CEN),
-    .WEN    (WEN),
-    .A      (A),
-    .D      (D),
-    .Q      (Q)
 );
 
 endmodule

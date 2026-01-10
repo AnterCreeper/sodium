@@ -1,7 +1,7 @@
 `include "defines.v"
 
 `ifdef DEBUG
-module dll_sim(
+module sim_delay(
 	input enable,
 	input clkin,
 	output reg clkout
@@ -15,8 +15,8 @@ endmodule
 `endif
 
 module ram_core(
-	input clk,
-	input rst,
+	input 			clk,
+	input 			rst,
 //HOST
 	input 			host_req,
 	input 			host_rwn,
@@ -64,12 +64,12 @@ wire[1:0] 	ram_rwds_ddr;
 
 //Physical
 `ifdef DEBUG
-dll_sim dll_ckin(
+sim_delay dll_ckin(
 	.enable(ram_rx_en),
 	.clkin(ram_rwds_in),
 	.clkout(ram_rx_clk)
 );
-dll_sim dll_ckout(
+sim_delay dll_ckout(
 	.enable(ram_cke),
 	.clkin(clk),
 	.clkout(ram_clk)

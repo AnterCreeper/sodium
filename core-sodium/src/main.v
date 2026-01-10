@@ -4,6 +4,9 @@ module system(
 	input       ref_clk,
 	input       ext_rst,
 
+	output      uart_tx,
+
+	/*
 	output 		dram_cs,
 	output 		dram_clk,
 	inout[7:0] 	dram_adq,
@@ -15,12 +18,20 @@ module system(
 	inout       usb_dp,
 	inout       usb_dn,
 	output      usb_pu,
-
-	output      uart_tx,
+	*/
 
     output[7:0] trace
 );
 
+//Unused Pin
+wire        dram_cs;
+wire        dram_clk;
+wire[7:0] 	dram_adq;
+wire        dram_rwds;
+wire        rgmii_mdc;
+wire        rgmii_mdio;
+
+//System
 wire        aux_rst;
 wire        sys_clk;
 wire        sys_rst;    //50MHz
@@ -90,32 +101,6 @@ wire[31:0]  pc_epc;
 wire        exi;
 wire[4:0]   exi_code;
 
-//PIC
-wire        pic_mgmt_ack;
-wire        pic_mgmt_rxe;
-wire[31:0]  pic_mgmt_rxd;
-
-wire[31:0]  sys_irq;
-
-pic_core pic(
-	.clk(sys_clk),
-	.rst(sys_rst),
-
-    .irq(sys_irq & ~mask),
-
-    .exi(exi),
-    .exi_code(exi_code),
-
-    .mgmt_req(mgmt_req),
-    .mgmt_adr(mgmt_adr),
-    .mgmt_ack(pic_mgmt_ack),
-    .mgmt_rwn(mgmt_rwn),
-    .mgmt_wen(mgmt_wen),
-    .mgmt_txd(mgmt_txd),
-    .mgmt_rxe(pic_mgmt_rxe),
-    .mgmt_rxd(pic_mgmt_rxd)
-);
-
 wire        sys_init;
 
 wire        insn_reset;
@@ -179,6 +164,32 @@ mp_core core(
 //TODO N.C. over Dcache Invalid Path
 assign invd_req  = 0;
 assign invd_addr = 16'hx;
+
+//PIC
+wire        pic_mgmt_ack;
+wire        pic_mgmt_rxe;
+wire[31:0]  pic_mgmt_rxd;
+
+wire[31:0]  sys_irq;
+
+pic_core pic(
+	.clk(sys_clk),
+	.rst(sys_rst),
+
+    .irq(sys_irq & ~mask),
+
+    .exi(exi),
+    .exi_code(exi_code),
+
+    .mgmt_req(mgmt_req),
+    .mgmt_adr(mgmt_adr),
+    .mgmt_ack(pic_mgmt_ack),
+    .mgmt_rwn(mgmt_rwn),
+    .mgmt_wen(mgmt_wen),
+    .mgmt_txd(mgmt_txd),
+    .mgmt_rxe(pic_mgmt_rxe),
+    .mgmt_rxd(pic_mgmt_rxd)
+);
 
 wire        reg_mgmt_ack;
 wire        reg_mgmt_rxe;
