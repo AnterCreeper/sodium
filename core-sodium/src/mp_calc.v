@@ -10,7 +10,7 @@ module calc_booth(
 wire s;
 assign s = a[2]; //sign
 wire[1:0] ai;
-assign ai = s ? ~a : a;
+assign ai = s ? ~a[1:0] : a[1:0];
 
 wire[2:0] z;
 assign z[0] = ~(ai[0]|ai[1]);   //zero
@@ -151,7 +151,7 @@ module calc_bitfield(
 wire[3:0] shift = b[3:0];
 wire[3:0] range = b[11:8]; //range+1 bits mask
 
-wire[15:0] s = 1 << ((c ? shift : 0) + range); //e.g. 0010 0000
+wire[15:0] s = 'b1 << ((c ? shift : 0) + range); //e.g. 0010 0000
 
 wire[15:0] mask = (-s) ^ s;                    //e.g. 1100 0000
 wire[15:0] sext = {16{|(s & a) & b[12]}};      //e.g. 1111 1111
@@ -238,7 +238,7 @@ begin
     `TAG_SLTU: begin C[31:16] <= 16'hx;  C[15:0] <= Ai < Bi ? 1 : 0;            end
     `TAG_MOVZ: begin C[31:16] <= 16'hx;  C[15:0] <= Bi;                         end
     `TAG_MOVN: begin C[31:16] <= 16'hx;  C[15:0] <= Bi;                         end
-    default:   begin C[31:16] <= 32'hx; end
+    default:   begin C[31:0] <= 32'hx; end
     //TODO
     //`TAG_ADD32:  begin C[31:17] <= 15'b0;  C[16:0] <= {1'b0, Ai} + {1'b0, Bi};  end
     //`TAG_SUB32:  begin C[31:17] <= 15'b0;  C[16:0] <= {1'b1, Ai} - {1'b0, Bi};  end

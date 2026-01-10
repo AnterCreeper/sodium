@@ -4,71 +4,6 @@
 `define REPLACE_OUT     3'b010
 `define REPLACE_IN      3'b100
 
-module lsu_tags(
-    input CLK,
-    input           CENA,
-    input[4:0]      AA,
-    output reg[6:0] QA,
-    input           CENB,
-    input[4:0]      AB,
-    output reg[6:0] QB,
-    input           CENC,
-    input[4:0]      AC,
-    input[6:0]      DC,
-    input           CEND,
-    input[4:0]      AD,
-    input[6:0]      DD
-);
-
-reg _CENA, _CENB;   //remove dirty gate
-always @(negedge CLK)
-begin
-    _CENA <= CENA;
-    _CENB <= CENB;
-end
-
-wire[6:0] _QA;
-always @(*)         //latch output data
-begin
-    if(!_CENA) QA = _QA;
-    if(!_CENB) QB = _QA;
-end
-
-reg[4:0] _AA;
-reg[4:0] _AB;
-reg[6:0] _DB;
-always @(*)
-begin
-    case({CENB, CENA})
-    2'b10:   _AA = AA;
-    2'b01:   _AA = AB;
-    default: _AA = 5'bx;
-    endcase
-    case({CEND, CENC})
-    2'b10:   _AB = AC;
-    2'b01:   _AB = AD;
-    default: _AB = 5'bx;
-    endcase
-    case({CEND, CENC})
-    2'b10:   _DB = DC;
-    2'b01:   _DB = DD;
-    default: _DB = 7'bx;
-    endcase
-end
-
-sram_sdp #(5, 7)    //32x7 SRAM, simple dual port
-tags_ram (
-    .CLK    (CLK),
-    .CENA   (CENA&&CENB),
-    .AA     (_AA),
-    .QA     (_QA),
-    .CENB   (CENC&&CEND),
-    .AB     (_AB),
-    .DB     (_DB)
-);
-
-endmodule
-
 module lsu_permute(
     input[127:0] A,
     input[15:0]  M,
@@ -282,6 +217,7 @@ reg[15:0]   line_wen;
 reg[4:0]    line_adr;
 reg[127:0]  line_din;
 wire[127:0] line_dout;
+`ifdef DEBUG
 sram_sp_mask #(5, 128, 4) //32x128 SRAM, with byte mask
 dcache_line(
     .CLK    (!sys_clk),
@@ -291,6 +227,16 @@ dcache_line(
     .D      (line_din),
     .Q      (line_dout)
 );
+`else
+dcache_mem dcache_line(
+    .CLK    (!sys_clk),
+    .CEN    (~line_cen),
+    .WEN    (~line_wen),
+    .A      (line_adr),
+    .D      (line_din),
+    .Q      (line_dout)
+);
+`endif
 
 //Cache Signal
 always @(*)
@@ -491,20 +437,31 @@ begin
 end
 assign invd_true = invd_test && invd_tag == invd_ctag;
 
-lsu_tags dcache_tags(
+wire        tag_update      = mem_replace || zero_wen;
+wire[4:0]   tag_update_addr = mem_replace ? mem_replace_set : cache_nset;
+wire[6:0]   tag_update_data = mem_replace ? mem_replace_tag : cache_ntag;
+
+`ifdef DEBUG
+sram_sdp #(5, 7)    //32x7 SRAM, simple dual port
+dcache_tags (
     .CLK    (sys_clk),
     .CENA   (!look_cen),
     .AA     (look_adr),
     .QA     (look_tag),
-    .CENB   (!invd_ack),
-    .AB     (invd_set),
-    .QB     (invd_tag),
-    .CENC   (!mem_replace),
-    .AC     (mem_replace_set),
-    .DC     (mem_replace_tag),
-    .CEND   (!zero_wen),
-    .AD     (cache_nset),
-    .DD     (cache_ntag)
+    .CENB   (!tag_update),
+    .AB     (tag_update_addr),
+    .DB     (tag_update_data)
 );
+`else
+dcache_tag dcache_tags (
+    .CLK    (sys_clk),
+    .CENA   (!look_cen),
+    .AA     (look_adr),
+    .QA     (look_tag),
+    .CENB   (!tag_update),
+    .AB     (tag_update_addr),
+    .DB     (tag_update_data)
+);
+`endif
 
 endmodule

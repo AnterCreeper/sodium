@@ -1,5 +1,19 @@
 `include "defines.v"
 
+`ifdef DEBUG
+module dll_sim(
+	input enable,
+	input clkin,
+	output reg clkout
+);
+
+always @(*)
+begin
+#`SIM_QUAT_CYC clkout <= enable ? clkin : 0;
+end
+endmodule
+`endif
+
 module ram_core(
 	input clk,
 	input rst,
@@ -32,40 +46,52 @@ module ram_core(
 //IO
 	output 			ram_cs,
 	output 			ram_clk,
-	inout[7:0] 		ram_adq,
-	inout 			ram_rwds
+	output			ram_adq_oe,
+	input[7:0]		ram_adq_in,
+	output[7:0]		ram_adq_out,
+	output			ram_rwds_oe,
+	input			ram_rwds_in,
+	output			ram_rwds_out
 );
 
 wire 		ram_cke;
-wire[7:0] 	ram_adq_ddr;
-
 wire 		ram_tx_oe;
 wire[15:0] 	ram_tx_dat;
-
 wire 		ram_rx_en;
 wire 		ram_rx_clk;
 reg[15:0] 	ram_rx_dat;
-
-wire 		ram_rwds_oe;
-wire 		ram_rwds_ddr;
-wire[1:0] 	ram_rwds_out;
+wire[1:0] 	ram_rwds_ddr;
 
 //Physical
-dll dll_ckin(
+`ifdef DEBUG
+dll_sim dll_ckin(
 	.enable(ram_rx_en),
-	.clkin(ram_rwds),
+	.clkin(ram_rwds_in),
 	.clkout(ram_rx_clk)
 );
-dll dll_ckout(
+dll_sim dll_ckout(
 	.enable(ram_cke),
 	.clkin(clk),
 	.clkout(ram_clk)
 );
+`else
+sys_delay dll_ckin(
+	.enable(ram_rx_en),
+	.refclk(clk),
+	.clkin(ram_rwds_in),
+	.clkout(ram_rx_clk)
+);
+sys_delay dll_ckout(
+	.enable(ram_cke),
+	.refclk(clk),
+	.clkin(clk),
+	.clkout(ram_clk)
+);
+`endif
 
-assign ram_rwds 	= ram_rwds_oe ? ram_rwds_ddr : 1'bz;
-assign ram_rwds_ddr = clk ? ram_rwds_out[1]  : ram_rwds_out[0];
-assign ram_adq 		= ram_tx_oe   ? ram_adq_ddr  : 8'bz;
-assign ram_adq_ddr	= clk ? ram_tx_dat[15:8] : ram_tx_dat[7:0];
+assign ram_adq_oe	= ram_tx_oe;
+assign ram_adq_out	= clk ? ram_tx_dat[15:8] : ram_tx_dat[7:0];
+assign ram_rwds_out = clk ? ram_rwds_ddr[1]  : ram_rwds_ddr[0];
 
 //Controller
 wire 		phy_req;
@@ -139,11 +165,11 @@ ram_phy phy(
 	.ram_tx_oe	 (ram_tx_oe),
 	.ram_tx_dat	 (ram_tx_dat),
 	.ram_rwds_oe (ram_rwds_oe),
-	.ram_rwds_in (ram_rwds),
-	.ram_rwds_out(ram_rwds_out),
+	.ram_rwds_in (ram_rwds_in),
+	.ram_rwds_out(ram_rwds_ddr),
 	.ram_rx_en	 (ram_rx_en),
 	.ram_rx_clk	 (ram_rx_clk),
-	.ram_rx_dat	 (ram_adq),
+	.ram_rx_dat	 (ram_adq_in),
 
 	//FROM HUB
 	.req		 (phy_req),

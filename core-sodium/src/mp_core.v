@@ -2,30 +2,30 @@
 
 module mp_sync_rst(
     input       clk,
-    input       ext_rst, //async reset
+    input       sys_rst, //async reset
     input       aux_rst, //sync reset
     output reg  sysinit,
-    output reg  sys_rst
+    output reg  mpu_rst
 );
 
 reg sync_rst;
-always @(negedge clk or posedge ext_rst)
+always @(negedge clk or posedge sys_rst)
 begin
-    if(ext_rst)
+    if(sys_rst)
         sync_rst <= 1'b1;
     else
         sync_rst <= aux_rst;
 end
-always @(negedge clk or posedge ext_rst)
-begin
-    if(ext_rst)
-        sys_rst <= 1'b1;
-    else
-        sys_rst <= sync_rst;
-end
-always @(posedge clk or posedge sys_rst)
+always @(negedge clk or posedge sys_rst)
 begin
     if(sys_rst)
+        mpu_rst <= 1'b1;
+    else
+        mpu_rst <= sync_rst;
+end
+always @(posedge clk or posedge mpu_rst)
+begin
+    if(mpu_rst)
         sysinit <= 1;
     else
         sysinit <= 0;
@@ -55,7 +55,6 @@ wire[31:0] rs1_mem, rs2_mem;
 dffs_dp_async #(4, 32, 1)   //16x32 DFFs, async read
 regfile_0 (
     .CLK(sys_clk),
-
     .CENA(~wb),
     .WENA(~wb_mask),
     .AA(wb_rd[4:1]),
@@ -64,11 +63,9 @@ regfile_0 (
     .AB(rs1[4:1]),
     .QB(rs1_mem)
 );
-
 dffs_dp_async #(4, 32, 1)   //16x32 DFFs, async read
 regfile_1 (
     .CLK(sys_clk),
-
     .CENA(~wb),
     .WENA(~wb_mask),
     .AA(wb_rd[4:1]),
@@ -88,7 +85,7 @@ endmodule
 module mp_core(
     //Clock and Reset
     input           sys_clk,
-    input           ext_rst,
+    input           sys_rst,
     input           aux_rst,
     output          sys_init,
 
@@ -108,6 +105,9 @@ module mp_core(
     //Performace Line
     output[7:0]     perf,
 
+    //Debug Trace
+    output[7:0]     trace,
+
     //Invalid Path
     input           invd_req,
     output          invd_ack,
@@ -126,6 +126,12 @@ module mp_core(
     input[6:0]      mem_replace_tag,
     input[127:0]    mem_replace_dat,
 
+    output          insn_reset,
+    output          insn_request,
+    output[15:0]    insn_addr,
+    input           insn_valid,
+    input[31:0]     insn_data,
+
     //Management Command
     output 			mgmt_req,
 	input 			mgmt_ack,
@@ -139,12 +145,12 @@ module mp_core(
 );
 
 //Reset Module
-wire sys_rst;
+wire mpu_rst;
 mp_sync_rst reset(
     .clk    (sys_clk),
-    .ext_rst(ext_rst),  //external async reset in
+    .sys_rst(sys_rst),  //external async reset in
     .aux_rst(aux_rst),  //auxiliary sync reset in
-    .sys_rst(sys_rst),  //async reset out
+    .mpu_rst(mpu_rst),  //async reset out
     .sysinit(sys_init)  //sync reset out
 );
 
@@ -164,21 +170,28 @@ wire stall = !icache_vld || stall_lsu || stall_sys || stall_wfi || stall_haz || 
 
 //I cache
 wire[31:0] fetch_addr;
-wire[29:0] icache_addr;
+wire[31:0] icache_addr;
 wire[31:0] icache_data;
 
 assign icache_req = sys_init || !stall;
-assign icache_addr = {m32 ? 0 : fetch_addr[31:16], fetch_addr[15:2]};
+assign icache_addr = {m32 ? fetch_addr[31:16] : 16'b0, fetch_addr[15:2], 2'b0};
 
+`ifdef DEBUG
 mp_icache   icache(
     .sys_clk    (sys_clk),
-    .sys_rst    (sys_rst),
-
+    .icache_rst (mpu_rst),
     .icache_req (icache_req),
     .icache_addr(icache_addr),
     .icache_vld (icache_vld),
     .icache_data(icache_data)
 );
+`else
+assign insn_reset   = mpu_rst;
+assign insn_request = icache_req;
+assign insn_addr    = icache_addr;
+assign icache_vld   = insn_valid;
+assign icache_data  = insn_data;
+`endif
 
 assign instru = sys_init || !icache_vld ? 32'h0 : icache_data;
 
@@ -335,7 +348,7 @@ reg[31:0]  mem_fwd_data1;
 //Execution
 mp_branch   branch(
     .sys_clk    (sys_clk),
-    .sys_rst    (sys_rst),
+    .sys_rst    (mpu_rst),
 
     .stall      (stall),
     .stall_wfi  (stall_wfi),
@@ -372,7 +385,7 @@ mp_branch   branch(
 
 mp_bypass   bypass(
     .sys_clk    (sys_clk),
-    .sys_rst    (sys_rst),
+    .sys_rst    (mpu_rst),
 
     .issue      (issue_byp),
 
@@ -386,7 +399,7 @@ mp_bypass   bypass(
 
 mp_alu      arith(
     .sys_clk    (sys_clk),
-    .sys_rst    (sys_rst),
+    .sys_rst    (mpu_rst),
 
     .issue      (issue_alu),
     .func3      (func3),
@@ -409,7 +422,7 @@ mp_alu      arith(
 
 mp_dcache   dcache(
     .sys_clk    (sys_clk),
-    .sys_rst    (sys_rst),
+    .sys_rst    (mpu_rst),
 
     .stall      (stall_lsu),
     .issue      (issue_mem),
@@ -454,7 +467,7 @@ mp_dcache   dcache(
 
 mp_sysbus   sysbus(
     .sys_clk    (sys_clk),
-    .sys_rst    (sys_rst),
+    .sys_rst    (mpu_rst),
 
     .stall      (stall_sys),
     .issue      (issue_sys),
@@ -512,9 +525,9 @@ wire pre_fwd2 = rs2[4:1] == 0 ? 1'b0 : (wb_rd[4:1] == rs2[4:1] ? wb : 0);
 
 assign stall_haz = (opcode4 == `FMT_LS || issue_jmp) && pre_fwd2 ? wb32 || (wb_rd[0] == rs2[0]) : 0;
 
-always @(posedge sys_clk or posedge sys_rst)
+always @(posedge sys_clk or posedge mpu_rst)
 begin
-    if(sys_rst)
+    if(mpu_rst)
     begin
         alu_fwd_en1 <= 0;
         alu_fwd_en2 <= 0;
@@ -530,5 +543,8 @@ begin
         mem_fwd_data1 <= wb32 ? wb_rd_data32 : {wb_rd_data32[15:0], wb_rd_data32[15:0]};
     end
 end
+
+//Debug
+assign trace = pc[11:2];
 
 endmodule

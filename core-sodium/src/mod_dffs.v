@@ -128,7 +128,7 @@ module dffs_sp_reset
 
 wire[WLEN-1:0] RSTB = {WLEN{CENB}} | WENB;
 
-integer i, j;
+integer i;
 always @(posedge CLK or negedge RST)
 begin
     for(i = 0; i < WLEN; i = i + 1)

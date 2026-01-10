@@ -43,11 +43,11 @@ static void debug_flush() {
 
 static void debug_stop() {
     int cmd = 0x1;
-    __asm__ volatile("wcsr\t0x1e, %0" : : "r"(cmd));
+    __asm__ volatile("wcsr\t0x50, %0" : : "r"(cmd));
 }
 
 static void debug_putchar(unsigned char c) {
-    __asm__ volatile("wcsr\t0x1f, %0" : : "r"(c));
+    __asm__ volatile("wcsr\t0x51, %0" : : "r"(c));
 }
 
 void *memset(void *str, int c, size_t n);

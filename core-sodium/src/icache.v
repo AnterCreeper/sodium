@@ -30,24 +30,23 @@ endmodule
 
 module mp_icache(
     input        sys_clk,
-    input        sys_rst,
-
+    input        icache_rst,
     input        icache_req,
-    input[29:0]  icache_addr,
+    input[31:0]  icache_addr,
     output reg   icache_vld,
     output[31:0] icache_data
 );
 
-always @(posedge sys_clk or posedge sys_rst)
+always @(posedge sys_clk or posedge icache_rst)
 begin
-    if(sys_rst) icache_vld <= 0;
+    if(icache_rst) icache_vld <= 0;
     else        icache_vld <= icache_vld || icache_req;
 end
 
 icache_mem mem(
     .CLK    (sys_clk),
     .CEN    (~icache_req),
-    .A      (icache_addr),
+    .A      (icache_addr[31:2]),
     .Q      (icache_data)
 );
 

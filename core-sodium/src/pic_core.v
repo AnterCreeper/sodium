@@ -28,10 +28,10 @@ begin
 end
 */
 
-parameter INC = 2**B;
-parameter SEG = 2**(`N-A-1);
-parameter CNT = 2**(A-B);
-parameter LEN = 2**(A+1);
+localparam INC = 2**B;
+localparam SEG = 2**(`N-A-1);
+localparam CNT = 2**(A-B);
+localparam LEN = 2**(A+1);
 
 genvar i, j, k;
 generate
@@ -152,7 +152,7 @@ wire[31:0]  cfg_dout;
 always @(posedge clk)
 begin
     rwn     <= mgmt_rwn;
-    wen     <= mgmt_wen;
+    wen     <= mgmt_wen[0];
     cfg_cmd <= mgmt_adr;
     cfg_din <= mgmt_txd;
 end

@@ -169,7 +169,9 @@ reg ram_rx_rst, ram_rx_run;
 reg[1:0] ram_rx_icnt;
 reg[9:0] ram_rx_ocnt;
 
-reg[15:0] ram_rx_buf[3:0];
+//reg[15:0] ram_rx_buf[3:0];
+reg[7:0] ram_rx_buf_p[3:0]; //hi
+reg[7:0] ram_rx_buf_n[3:0]; //lo
 
 //FIFO input
 always @(negedge ram_rx_clk or negedge ram_rx_en)
@@ -184,11 +186,13 @@ begin
 end
 always @(negedge ram_rx_clk)
 begin
-	ram_rx_buf[ram_rx_icnt][7:0] <= ram_rx_dat;
+	//ram_rx_buf[ram_rx_icnt][7:0] <= ram_rx_dat;
+    ram_rx_buf_n[ram_rx_icnt] <= ram_rx_dat;
 end
 always @(posedge ram_rx_clk)
 begin
-	ram_rx_buf[ram_rx_icnt][15:8] <= ram_rx_dat;
+	//ram_rx_buf[ram_rx_icnt][15:8] <= ram_rx_dat;
+    ram_rx_buf_p[ram_rx_icnt] <= ram_rx_dat;
 end
 //Async Boundaries
 reg sync;
@@ -212,7 +216,8 @@ begin
 		rx_fin <= 0;
 	end else
 	begin
-		rx_dat <= ram_rx_buf[ram_rx_ocnt[1:0]];
+		//rx_dat <= ram_rx_buf[ram_rx_ocnt[1:0]];
+        rx_dat <= {ram_rx_buf_p[ram_rx_ocnt[1:0]], ram_rx_buf_n[ram_rx_ocnt[1:0]]};
 		rx_vld <= ram_rx_run && !rx_fin;
 		ram_rx_ocnt <= ram_rx_run && !rx_fin ? ram_rx_ocnt + 1 : 0;
 		rx_fin <= ram_rx_run ? ram_rx_ocnt == tot_cnt : 0;

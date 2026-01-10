@@ -375,6 +375,8 @@ begin
     `TAG_W: mgmt_txd <= evb_data32;
     `TAG_H: mgmt_txd <= {evb_data16, 16'hx};
     `TAG_L: mgmt_txd <= {16'hx, evb_data16};
+    default:
+            mgmt_txd <= 32'bx;
     endcase
 end
 
@@ -384,6 +386,8 @@ begin
     `TAG_W: wb_data <= mgmt_rxd;
     `TAG_H: wb_data <= {mgmt_rxd[31:16], mgmt_rxd[31:16]};
     `TAG_L: wb_data <= mgmt_rxd;
+    default:
+            wb_data <= 32'hx;
     endcase
 end
 endmodule

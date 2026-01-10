@@ -8,24 +8,20 @@
 `define MASK_MC         16'hfff0    //16
 `define ADDR_MC         16'h0040    //0x0040 - 0x004f
 
+`define MASK_DBG        16'hfffe    //2
+`define ADDR_DBG        16'h0050    //0x0050
+
+`define ADDR_MDB0       16'h0050
+`define ADDR_MDB1       16'h0051
+
+`define MASK_MDC        16'hff00    //256
+`define ADDR_MDC        16'h0100    //0x0100 - 0x01ff
+
 //System CSR Regmap
-
 //1: rw, 0: ro
-`define REG_MASK        32'hc00f000f
+`define REG_MASK        32'h0007000f
 
-`define ADDR_MDB1       16'h001f
-`define ADDR_MDB0       16'h001e
-
-`define ADDR_MSRU       16'h001b
-`define ADDR_MLSU       16'h001a
-`define ADDR_MALU       16'h0019
-`define ADDR_MBRU       16'h0018
-`define ADDR_MCPS       16'h0017
-`define ADDR_MDCM       16'h0016
-`define ADDR_MICM       16'h0015
-`define ADDR_MSTK       16'h0014
-
-`define ADDR_MCR3       16'h0013
+`define ADDR_MSTK       16'h0013
 `define ADDR_MCR2       16'h0012
 `define ADDR_MCR1       16'h0011
 `define ADDR_MCR0       16'h0010

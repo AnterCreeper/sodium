@@ -31,7 +31,7 @@ void *memcpy(void *dest, const void * src, size_t n) {
 
 clock_t clock() {
     unsigned int lo, hi;
-    __asm__ volatile("rcsr\t0x14, %0" : "=r"(lo) : );
-    __asm__ volatile("rcsr.h\t0x14, %0" : "=r"(hi) : );
+    __asm__ volatile("rcsr\t0x13, %0" : "=r"(lo) : );
+    __asm__ volatile("rcsr.h\t0x13, %0" : "=r"(hi) : );
     return ((unsigned long)hi << 16) | lo;
 }
