@@ -33,28 +33,6 @@ static void __attribute__((always_inline)) dcache_flush(void* data) {
     return;
 }
 
-int ee_printf(const char *fmt, ...);
-
-static void debug_flush() {
-    #pragma clang loop unroll(disable)
-    for(int i = 0; i < 512; i = i + 16) dcache_flush((void*)i);
-    return;
-}
-
-static void debug_stop() {
-    int cmd = 0x1;
-    __asm__ volatile("wcsr\t0x50, %0" : : "r"(cmd));
-}
-
-static void debug_putchar(unsigned char c) {
-    __asm__ volatile("wcsr\t0x51, %0" : : "r"(c));
-}
-
-static void __attribute__((always_inline)) debug_wfi() {
-    __asm__ volatile("wfi");
-    return;
-}
-
 void *memset(void *str, int c, size_t n);
 void *memcpy(void *dest, const void * src, size_t n);
 
@@ -99,5 +77,30 @@ static void __attribute__((always_inline)) write_csr(const unsigned int address,
     __asm__ volatile("wcsr\t%0, %1" : : "i"(address), "r"(data));
     return;
 }
+
+static void debug_putchar(const char c) {
+    write_csr(0x50, c);
+    return;
+}
+
+static int debug_getchar(char* c) {
+    if(c == NULL) return -1;
+    int data = read_csr(0x50);
+    if(data < 0) return -1;
+    *c = data;
+    return 0;
+}
+
+static void debug_flush() {
+    #pragma clang loop unroll(disable)
+    for(int i = 0; i < 512; i = i + 16) dcache_flush((void*)i);
+    return;
+}
+
+static void debug_stop() {
+    asm("wfi");
+}
+
+int ee_printf(const char *fmt, ...);
 
 #endif

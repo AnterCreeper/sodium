@@ -8,11 +8,8 @@
 `define MASK_MC         16'hfff0    //16
 `define ADDR_MC         16'h0040    //0x0040 - 0x004f
 
-`define MASK_DBG        16'hfffe    //2
+`define MASK_DBG        16'hffff    //1
 `define ADDR_DBG        16'h0050    //0x0050
-
-`define ADDR_MDB0       16'h0050
-`define ADDR_MDB1       16'h0051
 
 `define MASK_MDC        16'hff00    //256
 `define ADDR_MDC        16'h0100    //0x0100 - 0x01ff

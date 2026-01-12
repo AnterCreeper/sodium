@@ -30,9 +30,7 @@ int main() {
     print_number("input:");
     qsort(number, 0, 511);
     print_number("output:");
-    #pragma clang loop unroll (disable)
-    for(int i = 0; i < 512; i = i + 16)
-        dcache_flush((int*)i);
-    debug_wfi();
+    debug_flush();
+    debug_stop();
     return 0;
 }

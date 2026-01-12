@@ -5,6 +5,7 @@ module system(
 	input       ext_rst,
 
 	output      uart_tx,
+	input       uart_rx,
 
 	/*
 	output 		dram_cs,
@@ -109,6 +110,10 @@ wire[15:0]  insn_addr;
 wire        insn_valid;
 wire[31:0]  insn_data;
 
+`ifdef DEBUG
+wire        sim_stop;
+`endif
+
 //Core
 mp_core core(
     .sys_clk    (sys_clk),
@@ -128,6 +133,9 @@ mp_core core(
     .mepc       (mepc),
     .perf       (perf),
     .trace      (trace),
+`ifdef DEBUG
+    .sim_stop   (sim_stop),
+`endif
 
     .mem_request    (mem_request),
     .mem_finish     (mem_finish),
@@ -225,10 +233,6 @@ sysreg_core sysreg(
     .mgmt_rxd(reg_mgmt_rxd)
 );
 
-`ifdef DEBUG
-wire        sim_stop;
-`endif
-
 wire        dbg_mgmt_ack;
 wire        dbg_mgmt_rxe;
 wire[31:0]  dbg_mgmt_rxd;
@@ -253,12 +257,12 @@ debug_core debug(
     .mgmt_rxe(dbg_mgmt_rxe),
     .mgmt_rxd(dbg_mgmt_rxd),
 
-`ifdef DEBUG
-    .sim_stop(sim_stop),
-`endif
     .fifo_tx_rdy(fifo_tx_rdy),
     .fifo_tx_vld(fifo_tx_vld),
-    .fifo_tx_dat(fifo_tx_dat)
+    .fifo_tx_dat(fifo_tx_dat),
+    .fifo_rx_rdy(fifo_rx_rdy),
+    .fifo_rx_vld(fifo_rx_vld),
+    .fifo_rx_dat(fifo_rx_dat)
 );
 
 `ifdef DEBUG
@@ -275,17 +279,33 @@ uart_tx #(
     .EXTRA_BYTE_AFTER_TRANSFER (""),        // specify a extra byte to send after each AXI-stream transfer. when ="", do not send this extra byte
     .EXTRA_BYTE_AFTER_PACKET   ("")         // specify a extra byte to send after each AXI-stream packet  . when ="", do not send this extra byte
 )
-debug_uart (
+debug_uart_tx (
     .clk(sys_clk),
     .rstn(!sys_rst),
-
+    //IO
+    .o_uart_tx(uart_tx),
+//FIFO
     .i_tready(fifo_tx_rdy),
     .i_tvalid(fifo_tx_vld),
     .i_tdata(fifo_tx_dat),
     .i_tkeep(fifo_tx_vld),  //byte-enable of tvalid
-    .i_tlast(1'b0),         //invalid for no send extra byte
-
-    .o_uart_tx(uart_tx)
+    .i_tlast(1'b0)          //invalid for no send extra byte
+);
+uart_rx #(
+    .CLK_FREQ   (`SYSCLK_FREQ*1000000),     // clk frequency, Unit : Hz
+    .BAUD_RATE  (115200),                   // Unit : Hz
+    .PARITY     ("NONE"),                   // "NONE", "ODD", or "EVEN"
+    .FIFO_EA    (0)                         // 0:no fifo; 1,2:depth=4; 3:depth=8; 4:depth=16; ...; 10:depth=1024; 11:depth=2048; ...;
+)
+debug_uart_rx (
+    .clk(sys_clk),
+    .rstn(!sys_rst),
+    //IO
+    .i_uart_rx(uart_rx),
+//FIFO
+    .o_tready(fifo_rx_rdy),
+    .o_tvalid(fifo_rx_vld),
+    .o_tdata(fifo_rx_dat)
 );
 /*
 wire usb_dp_rx;
@@ -298,7 +318,7 @@ wire usb_dn_tx;
 usb_cdc #(
     .CHANNELS               ('d1),
     .USE_APP_CLK            ('d1),
-    .APP_CLK_FREQ           (`SYSCLK_FREQ),
+    .APP_CLK_FREQ     sys_rst      (`SYSCLK_FREQ),
     .VENDORID               (`USB_VENDORID),
     .PRODUCTID              (`USB_PRODUCTID),
     .IN_BULK_MAXPACKETSIZE  (`USB_BULK_SIZE),
@@ -306,17 +326,6 @@ usb_cdc #(
     .BIT_SAMPLES            (`USB_BIT_SAMPLES)
 )
 debug_usbcdc (
-//SYS
-    .app_clk_i(sys_clk),
-    //TX
-    .in_ready_o (fifo_tx_rdy),
-    .in_valid_i (fifo_tx_vld),
-    .in_data_i  (fifo_tx_dat),
-    //RX
-    .out_ready_i(fifo_rx_rdy),
-    .out_valid_o(fifo_rx_vld),
-    .out_data_o (fifo_rx_dat),
-
 //USB
     .clk_i  (usb_clk),
     .rstn_i (!sys_rst),
@@ -327,7 +336,16 @@ debug_usbcdc (
     .tx_en_o(usb_tx_en),
     .dp_tx_o(usb_dp_tx),
     .dn_tx_o(usb_dn_tx),
-
+//FIFO
+    .app_clk_i  (sys_clk),
+    //TX
+    .in_ready_o (fifo_tx_rdy),
+    .in_valid_i (fifo_tx_vld),
+    .in_data_i  (fifo_tx_dat),
+    //RX
+    .out_ready_i(fifo_rsys_rstx_rdy),
+    .out_valid_o(fifo_rx_vld),
+    .out_data_o (fifo_rx_dat),
 //Internal
     .frame_o(),
     .configured_o()
@@ -341,9 +359,6 @@ assign usb_dp_rx = usb_dp;
 assign usb_dn_rx = usb_dn;
 */
 `endif
-
-//TODO N.C. over Debug Receive Path
-assign fifo_rx_rdy = 1'b1;
 
 wire        mc_mgmt_ack;
 wire        mc_mgmt_rxe;

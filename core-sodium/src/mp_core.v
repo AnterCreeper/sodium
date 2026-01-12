@@ -107,6 +107,9 @@ module mp_core(
 
     //Debug Trace
     output[7:0]     trace,
+`ifdef DEBUG
+    output          sim_stop,
+`endif
 
     //D$ Invd Path
     input           invd_req,
@@ -546,5 +549,8 @@ end
 
 //Debug
 assign trace = pc[11:2];
+`ifdef DEBUG
+assign sim_stop = stall_wfi;
+`endif
 
 endmodule

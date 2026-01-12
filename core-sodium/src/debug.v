@@ -7,9 +7,9 @@ module debug_core(
     output      fifo_tx_vld, //valid
     output[7:0] fifo_tx_dat, //data
     input       fifo_tx_rdy, //ready
-`ifdef DEBUG
-    output reg sim_stop,
-`endif
+    input       fifo_rx_vld, //valid
+    input[7:0]  fifo_rx_dat, //data
+    output      fifo_rx_rdy, //ready
 
 //Bus Mgmt Path
     input 		 mgmt_req,
@@ -72,26 +72,24 @@ end
 assign request = issue && valid;
 
 //request, finish, busy, host_rwn, host_txd, host_rxd
-assign fifo_tx_vld = busy;
+assign fifo_rx_rdy = busy & host_rwn;
+assign fifo_tx_vld = busy & !host_rwn;
 assign fifo_tx_dat = host_txd[7:0];
-assign finish = fifo_tx_vld && fifo_tx_rdy;
+
+assign finish = host_rwn ? 1'b1 : fifo_tx_vld && fifo_tx_rdy;
+
+always @(posedge clk)
+begin
+    host_rxd <= {{8{fifo_rx_vld}}, fifo_rx_dat};
+end
 
 //Sim Debug Log Output
 `ifdef DEBUG
-initial sim_stop = 0;
 always @(posedge clk)
 begin
-    if(finish && !mgmt_rwn && (mgmt_adr == `ADDR_MDB0))
-    begin
-    case(mgmt_txd[15:0])
-    `DEBUG_CMD_HALT:  sim_stop <= 1;
-    endcase
-    end
-end
-always @(posedge clk)
-begin
-    if(finish && !mgmt_rwn && (mgmt_adr == `ADDR_MDB1))
+    if(finish && !mgmt_rwn)
         $write("%c", mgmt_txd[7:0]);
+    //TODO scanf
 end
 `endif
 
