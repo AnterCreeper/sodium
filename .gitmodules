@@ -7,3 +7,6 @@
 [submodule "FPGA-UART"]
 	path = FPGA-UART
 	url = https://github.com/WangXuan95/FPGA-UART
+[submodule "letter-shell"]
+	path = letter-shell
+	url = https://github.com/AnterCreeper/letter-shell
