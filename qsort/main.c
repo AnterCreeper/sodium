@@ -1,3 +1,7 @@
+#include "stdio.h"
+
+extern int number[];
+
 void qsort(int *data, int start, int end) {
     if(end > start) {
         int i = start, j = end, key = data[start];
@@ -14,22 +18,21 @@ void qsort(int *data, int start, int end) {
     return;
 }
 
-static void __attribute__((always_inline)) dcache_flush(void* data) {
-    unsigned *ptr = (unsigned *)data;
-    __asm__ volatile("dc.flush\t%0" : : "m"(*ptr));
-    return;
-}
-
-static void debug_stop() {
-    int cmd = 0x1;
-    __asm__ volatile("wcsr\t0x1e, %0" : : "r"(cmd));
+void print_number(const char* str) {
+    ee_printf(str);
+    for(int i = 0; i < 512; i++)
+        ee_printf("%d ", number[i]);
+    ee_printf("\n");
 }
 
 int main() {
-    qsort((int*)0, 0, 511);
+    ee_printf("Sodium Qsort Demo:\n");
+    print_number("input:");
+    qsort(number, 0, 511);
+    print_number("output:");
     #pragma clang loop unroll (disable)
     for(int i = 0; i < 512; i = i + 16)
         dcache_flush((int*)i);
-    debug_stop();
+    debug_wfi();
     return 0;
 }

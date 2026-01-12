@@ -151,10 +151,10 @@ module calc_bitfield(
 wire[3:0] shift = b[3:0];
 wire[3:0] range = b[11:8]; //range+1 bits mask
 
-wire[15:0] s = 'b1 << ((c ? shift : 0) + range); //e.g. 0010 0000
+wire[15:0] s = 'b1 << ((c ? shift : 0) + range);
 
-wire[15:0] mask = (-s) ^ s;                    //e.g. 1100 0000
-wire[15:0] sext = {16{|(s & a) & b[12]}};      //e.g. 1111 1111
+wire[15:0] mask = (-s) ^ s;
+wire[15:0] sext = {16{|(s & a) & b[12]}};
 
 wire[15:0] ai = (a & ~mask) | (mask & sext);
 
@@ -229,16 +229,16 @@ end
 wire[15:0] Bi = CTL && !MODE[0] ? 0 : B;
 always @(*)
 begin
-    if(!EN)    begin C[31:16] <= 0;      C[15:0] <= 0;                          end
+    if(!EN)    begin C[31:16] <= 0;      C[15:0] <= 0; end
     else
     case(CTL ? 0 : MODE)
-    `TAG_ADD:  begin C[31:16] <= 16'hx;  C[15:0] <= Ai + Bi;                    end
-    `TAG_SUB:  begin C[31:16] <= 16'hx;  C[15:0] <= Ai - Bi;                    end
+    `TAG_ADD:  begin C[31:16] <= 16'hx;  C[15:0] <= Ai + Bi; end
+    `TAG_SUB:  begin C[31:16] <= 16'hx;  C[15:0] <= Ai - Bi; end
     `TAG_SLT:  begin C[31:16] <= 16'hx;  C[15:0] <= $signed(Ai) < $signed(Bi) ? 1 : 0; end
-    `TAG_SLTU: begin C[31:16] <= 16'hx;  C[15:0] <= Ai < Bi ? 1 : 0;            end
-    `TAG_MOVZ: begin C[31:16] <= 16'hx;  C[15:0] <= Bi;                         end
-    `TAG_MOVN: begin C[31:16] <= 16'hx;  C[15:0] <= Bi;                         end
-    default:   begin C[31:0] <= 32'hx; end
+    `TAG_SLTU: begin C[31:16] <= 16'hx;  C[15:0] <= Ai < Bi ? 1 : 0; end
+    `TAG_MOVZ: begin C[31:16] <= 16'hx;  C[15:0] <= Bi; end
+    `TAG_MOVN: begin C[31:16] <= 16'hx;  C[15:0] <= Bi; end
+    default:   begin C[31:0]  <= 32'hx; end
     //TODO
     //`TAG_ADD32:  begin C[31:17] <= 15'b0;  C[16:0] <= {1'b0, Ai} + {1'b0, Bi};  end
     //`TAG_SUB32:  begin C[31:17] <= 15'b0;  C[16:0] <= {1'b1, Ai} - {1'b0, Bi};  end
@@ -259,16 +259,16 @@ module calc_logic(
 always @(*)
 begin
     C[31:16] <= 16'h0;
-    if(!EN)    begin C[15:0] <= 0;          end
+    if(!EN)    begin C[15:0] <= 0; end
     else
     case(MODE)
-    `TAG_OR:   begin C[15:0] <= A | B;      end
-    `TAG_AND:  begin C[15:0] <= A & B;      end
-    `TAG_XOR:  begin C[15:0] <= A ^ B;      end
-    `TAG_ORN:  begin C[15:0] <= A | ~B;     end
-    `TAG_ANDN: begin C[15:0] <= A & ~B;     end
-    `TAG_XNOR: begin C[15:0] <= A ^ ~B;     end
-    default:   begin C[15:0] <= 16'hx;      end
+    `TAG_OR:   begin C[15:0] <= A | B;  end
+    `TAG_AND:  begin C[15:0] <= A & B;  end
+    `TAG_XOR:  begin C[15:0] <= A ^ B;  end
+    `TAG_ORN:  begin C[15:0] <= A | ~B; end
+    `TAG_ANDN: begin C[15:0] <= A & ~B; end
+    `TAG_XNOR: begin C[15:0] <= A ^ ~B; end
+    default:   begin C[15:0] <= 16'hx;  end
     endcase
 end
 endmodule
@@ -315,17 +315,17 @@ calc_pack sfu5(
 always @(*)
 begin
     C[31:16] <= 16'h0;
-    if(!EN)    begin C[15:0] <= 0;      end
+    if(!EN)    begin C[15:0] <= 0;  end
     else
     case(MODE)
-    `TAG_REV:  begin C[15:0] <= Y1;     end
-    `TAG_CLZ:  begin C[15:0] <= Y2;     end
-    `TAG_BFI:  begin C[15:0] <= Y3;     end
-    `TAG_BFX:  begin C[15:0] <= Y3;     end
-    `TAG_CMP:  begin C[15:0] <= Y4;     end
-    `TAG_PACK: begin C[15:0] <= Y5;     end
+    `TAG_REV:  begin C[15:0] <= Y1; end
+    `TAG_CLZ:  begin C[15:0] <= Y2; end
+    `TAG_BFI:  begin C[15:0] <= Y3; end
+    `TAG_BFX:  begin C[15:0] <= Y3; end
+    `TAG_CMP:  begin C[15:0] <= Y4; end
+    `TAG_PACK: begin C[15:0] <= Y5; end
     `TAG_TBE:  begin C[15:0] <= {A[15:8] == B[15:8] ? 8'h0 : 8'hff, A[7:0] == B[7:0] ? 8'h0 : 8'hff}; end
-    default:   begin C[15:0] <= 16'hx;  end
+    default:   begin C[15:0] <= 16'hx; end
     endcase
 end
 endmodule

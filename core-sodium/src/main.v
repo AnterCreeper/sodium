@@ -166,11 +166,11 @@ assign invd_req  = 0;
 assign invd_addr = 16'hx;
 
 //PIC
+wire[31:0]  sys_irq;
+
 wire        pic_mgmt_ack;
 wire        pic_mgmt_rxe;
 wire[31:0]  pic_mgmt_rxd;
-
-wire[31:0]  sys_irq;
 
 pic_core pic(
 	.clk(sys_clk),

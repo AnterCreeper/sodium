@@ -50,6 +50,11 @@ static void debug_putchar(unsigned char c) {
     __asm__ volatile("wcsr\t0x51, %0" : : "r"(c));
 }
 
+static void __attribute__((always_inline)) debug_wfi() {
+    __asm__ volatile("wfi");
+    return;
+}
+
 void *memset(void *str, int c, size_t n);
 void *memcpy(void *dest, const void * src, size_t n);
 
@@ -83,6 +88,16 @@ static unsigned int __bytereplica16(unsigned char c) {
 }
 
 #define __bytereplica32(c)  (((unsigned long)__bytereplica16(c) << 16) | __bytereplica16(c))
-#define __aligned(p)        (((size_t)p & 0xf) == 0)
+
+static unsigned int __attribute__((always_inline)) read_csr(const unsigned int address) {
+    unsigned int tim;
+    __asm__ volatile("rcsr\t%1, %0" : "=r"(tim) : "i"(address));
+    return tim;
+}
+
+static void __attribute__((always_inline)) write_csr(const unsigned int address, unsigned int data) {
+    __asm__ volatile("wcsr\t%0, %1" : : "i"(address), "r"(data));
+    return;
+}
 
 #endif
