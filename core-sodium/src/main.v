@@ -267,6 +267,8 @@ debug_core debug(
 
 `ifdef DEBUG
 assign fifo_tx_rdy = 1'b1;
+assign fifo_rx_vld = 1'b0;
+assign fifo_rx_dat = 8'b0;
 `else
 uart_tx #(
     .CLK_FREQ   (`SYSCLK_FREQ*1000000),     // clk frequency, Unit : Hz
@@ -274,7 +276,7 @@ uart_tx #(
     .PARITY     ("NONE"),                   // "NONE", "ODD", or "EVEN"
     .STOP_BITS  (1),                        // can be 1, 2, 3, 4, ...
     .BYTE_WIDTH (1),                        // AXI stream data width, can be 1, 2, 3, 4, ...
-    .FIFO_EA    (0),                        // 0:no fifo; 1,2:depth=4; 3:depth=8; 4:depth=16; ...; 10:depth=1024; 11:depth=2048; ...;
+    .FIFO_EA    (2),                        // 0:no fifo; 1,2:depth=4; 3:depth=8; 4:depth=16; ...; 10:depth=1024; 11:depth=2048; ...;
     // do you want to send extra byte after each AXI-stream transfer or packet?
     .EXTRA_BYTE_AFTER_TRANSFER (""),        // specify a extra byte to send after each AXI-stream transfer. when ="", do not send this extra byte
     .EXTRA_BYTE_AFTER_PACKET   ("")         // specify a extra byte to send after each AXI-stream packet  . when ="", do not send this extra byte
@@ -295,7 +297,7 @@ uart_rx #(
     .CLK_FREQ   (`SYSCLK_FREQ*1000000),     // clk frequency, Unit : Hz
     .BAUD_RATE  (115200),                   // Unit : Hz
     .PARITY     ("NONE"),                   // "NONE", "ODD", or "EVEN"
-    .FIFO_EA    (0)                         // 0:no fifo; 1,2:depth=4; 3:depth=8; 4:depth=16; ...; 10:depth=1024; 11:depth=2048; ...;
+    .FIFO_EA    (2)                         // 0:no fifo; 1,2:depth=4; 3:depth=8; 4:depth=16; ...; 10:depth=1024; 11:depth=2048; ...;
 )
 debug_uart_rx (
     .clk(sys_clk),

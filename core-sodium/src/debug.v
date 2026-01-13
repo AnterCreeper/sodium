@@ -34,7 +34,7 @@ begin
         busy  <= 0;
     end else
     begin
-        issue <= !busy && mgmt_req;
+        issue <= !busy && mgmt_req && !issue;
         busy  <= !finish && (request || busy);
     end
 end
@@ -76,20 +76,25 @@ assign fifo_rx_rdy = busy & host_rwn;
 assign fifo_tx_vld = busy & !host_rwn;
 assign fifo_tx_dat = host_txd[7:0];
 
-assign finish = host_rwn ? 1'b1 : fifo_tx_vld && fifo_tx_rdy;
+assign finish = fifo_rx_rdy ? 1'b1 : fifo_tx_vld && fifo_tx_rdy;
 
 always @(posedge clk)
 begin
-    host_rxd <= {{8{fifo_rx_vld}}, fifo_rx_dat};
+//Sim Debug Input
+`ifdef DEBUG
+    if(finish && mgmt_rwn)
+        host_rxd <= {8'b0, 8'h0a}; //LF, '\n'
+`else
+    host_rxd <= {{8{!fifo_rx_vld}}, fifo_rx_dat};
+`endif
 end
 
-//Sim Debug Log Output
+//Sim Debug Output
 `ifdef DEBUG
 always @(posedge clk)
 begin
     if(finish && !mgmt_rwn)
         $write("%c", mgmt_txd[7:0]);
-    //TODO scanf
 end
 `endif
 

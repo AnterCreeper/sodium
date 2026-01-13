@@ -15,10 +15,17 @@ wire	  rgmii_mdio;
 
 pullup(rgmii_mdio);
 
+wire	  uart_tx;
+wire	  uart_rx;
+
+assign uart_rx = 1'b1;
+
 system testbench(
 	.ref_clk 	(clk),
 	.ext_rst 	(rst),
-
+	.uart_tx	(uart_tx),
+	.uart_rx	(uart_rx)
+/*
 	.dram_cs	(dram_cs),
 	.dram_clk   (dram_clk),
 	.dram_adq   (dram_adq),
@@ -26,6 +33,7 @@ system testbench(
 
 	.rgmii_mdc	(rgmii_mdc),
 	.rgmii_mdio	(rgmii_mdio)
+*/
 );
 
 always #`SIM_HALF_CYC clk = !clk;
