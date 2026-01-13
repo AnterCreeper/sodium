@@ -1,16 +1,16 @@
     .section .vector,"ax",@progbits
     .globl	_start
-    .weak	_syscall
-    .weak	_trap
-    .weak	_unimp
-    .weak	_irq
+    .weak	_irq_syscall
+    .weak	_irq_trap
+    .weak	_irq_unimp
+    .weak	_irq_extern
     .align	2
 _vector_base:
 _start:
-	b	_init	#software interrupt
-	b	_syscall
-	b	_trap
-	b	_unimp
+	b	_init		#software interrupt
+	b	_irq_syscall
+	b	_irq_trap
+	b	_irq_unimp
 	ebreak
 	ebreak
 	ebreak
@@ -39,7 +39,7 @@ _start:
 	ebreak
 	ebreak
 	ebreak
-	b	_irq	#hardware interrupt
+	b	_irq_extern	#hardware interrupt
 	ebreak
 	ebreak
 	ebreak
@@ -71,15 +71,14 @@ _start:
 	ebreak
 	ebreak
 	ebreak
-_syscall:
-_trap:
-_unimp:
-_irq:
+_irq_syscall:
+_irq_trap:
+_irq_unimp:
+_irq_extern:
 1:
     b     1b
 
-    .section .text.init,"ax",@progbits
-    .weak	_init
+    .section .text.init
     .align	2
 _init:
     add.i x1, zero, 0
@@ -113,28 +112,23 @@ _init:
     add.i x29, zero, 0
     add.i x30, zero, 0
     add.i x31, zero, 0	# reset register bank
-
-.Lpcrel_hi0:
-    pcadd12i  t0, %pcrel_hi12(_vector_base)
-    add.i t0, t0, %pcrel_lo(.Lpcrel_hi0)
-    li    t1, 0
-    wcsr.d  mvec, t0	# set interrupt vector
-
-						# write memory phy csr
     li    t0,   466     # {10'd7, 4'd4, 2'd2};
-    wcsr  mcr0, t0
+    wcsr  mcr0, t0	# memory param0
     li    t0,   3848    # {8'd15, 8'd8};
-    wcsr  mcr1, t0
-						# enable memory
+    wcsr  mcr1, t0	# memory param1
     li    t0,   1       # {1'b0, 1'b1};
-    wcsr  mcr2, t0
-
-    li    sp,   0x1f00  # setup stack pointer
-
+    wcsr  mcr2, t0	# enable memory
+.Lpcrel_hi0:
+    pcadd12i  sp, %pcrel_hi12(_stack)
+    add.i sp, sp, %pcrel_lo(.Lpcrel_hi0)
+			# setup stack pointer
+.Lpcrel_hi1:
+    pcadd12i  t0, %pcrel_hi12(_vector_base)
+    add.i t0, t0, %pcrel_lo(.Lpcrel_hi1)
+    wcsr.d  mvec, t0	# setup interrupt vector
     li    t0,   0xffff
     li    t1,   0xffff
-    wcsr.d  0x3, t0     # clear mask
+    wcsr.d  0x3, t0     # clear interrupt mask
     li    t0,   0x1
-    wcsr  msta, t0      # set interrupt enable
-
-    jmp   main			# goto main
+    wcsr  msta, t0      # enable interrupt
+    jmp   main		# goto main
