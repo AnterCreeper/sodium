@@ -1,7 +1,4 @@
 .DS_store
-qsort/result.S
-qsort/ram.bin
-qsort/data.S
 core-sodium/dump_data.bin
 core-sodium/hdl.var
 core-sodium/cds.lib
