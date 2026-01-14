@@ -10,6 +10,3 @@
 [submodule "letter-shell"]
 	path = letter-shell
 	url = https://github.com/AnterCreeper/letter-shell
-[submodule "2048-cli"]
-	path = 2048-cli
-	url = https://github.com/AnterCreeper/2048-cli
