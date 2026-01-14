@@ -1,8 +1,18 @@
+#ifdef DEBUG
+#include <stdio.h>
+#include <stdint.h>
+#else
 #include "stdio.h"
+#include "stdint.h"
+#endif
 
-extern int number[];
+extern int16_t number[];
 
-void qsort(int *data, int start, int end) {
+#ifndef DEBUG
+#define printf(...) ee_printf(__VA_ARGS__)
+#endif
+
+void qsort(int16_t *data, int start, int end) {
     if(end > start) {
         int i = start, j = end, key = data[start];
         while(i < j) {
@@ -19,18 +29,20 @@ void qsort(int *data, int start, int end) {
 }
 
 void print_number(const char* str) {
-    ee_printf(str);
+    printf("%s", str);
     for(int i = 0; i < 512; i++)
-        ee_printf("%d ", number[i]);
-    ee_printf("\n");
+        printf("%d ", number[i]);
+    printf("\n");
 }
 
 int main() {
-    ee_printf("Sodium Qsort Demo:\n");
+    printf("Sodium Qsort Demo:\n");
     print_number("input:");
     qsort(number, 0, 511);
     print_number("output:");
+#ifndef DEBUG
     debug_flush();
     debug_stop();
+#endif
     return 0;
 }
